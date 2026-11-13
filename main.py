@@ -5,10 +5,10 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 import sqlite3
 import os
-import shutil
-import uuid
+import base64
+import requests
 
-# التأكد من وجود مجلد الصور
+# التأكد من وجود مجلد الصور للشعار الثابت
 if not os.path.exists("static"):
     os.makedirs("static")
 
@@ -17,7 +17,87 @@ app.add_middleware(SessionMiddleware, secret_key="ryad_super_secret")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
+# إعدادات الاتصال الدائم بقاعدة بيانات Turso
+TURSO_URL = os.environ.get("TURSO_DATABASE_URL", "").replace("libsql://", "https://")
+TURSO_TOKEN = os.environ.get("TURSO_AUTH_TOKEN", "")
+
+class TursoCursor:
+    def __init__(self, rows=None):
+        self._rows = rows or []
+        self._index = 0
+
+    def fetchone(self):
+        if self._index < len(self._rows):
+            row = self._rows[self._index]
+            self._index += 1
+            return row
+        return None
+
+    def fetchall(self):
+        return self._rows
+
+class TursoConnection:
+    def __init__(self, url, token):
+        self.url = f"{url}/v2/pipeline"
+        self.headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json"
+        }
+
+    def _format_arg(self, val):
+        if val is None:
+            return {"type": "null"}
+        elif isinstance(val, bool):
+            return {"type": "integer", "value": "1" if val else "0"}
+        elif isinstance(val, int):
+            return {"type": "integer", "value": str(val)}
+        elif isinstance(val, float):
+            return {"type": "float", "value": val}
+        else:
+            return {"type": "text", "value": str(val)}
+
+    def execute(self, sql, params=()):
+        args = [self._format_arg(p) for p in params]
+        payload = {
+            "requests": [
+                {"type": "execute", "stmt": {"sql": sql, "args": args}},
+                {"type": "close"}
+            ]
+        }
+        resp = requests.post(self.url, headers=self.headers, json=payload, timeout=15)
+        data = resp.json()
+        res = data["results"][0]
+        if res["type"] == "error":
+            raise Exception(res["error"]["message"])
+        
+        result_data = res["response"]["result"]
+        cols = [c["name"] for c in result_data.get("cols", [])]
+        rows = []
+        for raw_row in result_data.get("rows", []):
+            row_dict = {}
+            for col_name, cell in zip(cols, raw_row):
+                val = cell.get("value")
+                if cell["type"] == "integer" and val is not None:
+                    val = int(val)
+                elif cell["type"] == "float" and val is not None:
+                    val = float(val)
+                row_dict[col_name] = val
+            rows.append(row_dict)
+        return TursoCursor(rows)
+
+    def cursor(self):
+        return self
+
+    def commit(self):
+        pass
+
+    def close(self):
+        pass
+
 def get_db():
+    # إذا كانت مفاتيح Turso مضافة في Render يتصل بالسحابة للأبد، وإلا يستخدم المحلي
+    if TURSO_URL and TURSO_TOKEN:
+        return TursoConnection(TURSO_URL, TURSO_TOKEN)
     conn = sqlite3.connect("technozone.db", check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
@@ -30,22 +110,22 @@ def init_db():
         username TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
         balance REAL DEFAULT 0.0,
-        is_admin BOOLEAN DEFAULT 0
+        is_admin INTEGER DEFAULT 0
     )''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         secret_code TEXT NOT NULL,
         price REAL NOT NULL DEFAULT 0.0,
-        is_sold BOOLEAN DEFAULT 0,
-        buyer_id INTEGER
+        is_sold INTEGER DEFAULT 0,
+        buyer_id INTEGER,
+        image_url TEXT
     )''')
     
-    # تحديث قاعدة البيانات القديمة لدعم الصور (بدون حذف البيانات)
     try:
         cursor.execute("ALTER TABLE items ADD COLUMN image_url TEXT")
     except:
-        pass # العمود موجود مسبقاً
+        pass
         
     if not cursor.execute("SELECT id FROM users WHERE username='admin'").fetchone():
         cursor.execute("INSERT INTO users (username, password, is_admin) VALUES ('admin', '123456', 1)")
@@ -81,8 +161,10 @@ def register_action(request: Request, username: str = Form(...), password: str =
     try:
         conn.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, password))
         conn.commit()
+        conn.close()
         return RedirectResponse(url="/login", status_code=303)
     except:
+        conn.close()
         return templates.TemplateResponse(request=request, name="login.html", context={"error": "اسم المستخدم مستخدم مسبقاً"})
 
 @app.get("/store", response_class=HTMLResponse)
@@ -91,8 +173,6 @@ def store_page(request: Request):
     if not user: return RedirectResponse(url="/login")
     conn = get_db()
     db_user = conn.execute("SELECT * FROM users WHERE id=?", (user["id"],)).fetchone()
-    
-    # جلب السلع مع صورها
     items = conn.execute("SELECT name, price, image_url, COUNT(id) as stock FROM items WHERE is_sold=0 GROUP BY name, price, image_url").fetchall()
     my_items = conn.execute("SELECT * FROM items WHERE buyer_id=?", (user["id"],)).fetchall()
     conn.close()
@@ -128,14 +208,13 @@ async def admin_add_item(request: Request, name: str = Form(...), secret_code: s
     user = get_user(request)
     if user and user["is_admin"]:
         image_url = None
-        # معالجة ورفع الصورة إن وجدت
+        # تحويل الصورة وحفظها داخل قاعدة البيانات السحابية لكي لا تضيع أبداً
         if image and image.filename:
-            ext = image.filename.split('.')[-1]
-            filename = f"{uuid.uuid4().hex}.{ext}"
-            filepath = os.path.join("static", filename)
-            with open(filepath, "wb") as buffer:
-                shutil.copyfileobj(image.file, buffer)
-            image_url = f"/static/{filename}"
+            content = await image.read()
+            if content:
+                mime_type = image.content_type or "image/png"
+                b64_data = base64.b64encode(content).decode("utf-8")
+                image_url = f"data:{mime_type};base64,{b64_data}"
             
         conn = get_db()
         conn.execute("INSERT INTO items (name, secret_code, price, image_url) VALUES (?, ?, ?, ?)", (name, secret_code, price, image_url))
