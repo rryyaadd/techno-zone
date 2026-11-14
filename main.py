@@ -6,6 +6,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 import sqlite3
 import os
+import asyncio
 import base64
 import requests
 
@@ -199,7 +200,8 @@ def init_db():
             is_sold INTEGER DEFAULT 0,
             buyer_id INTEGER,
             image_url TEXT,
-            product_id INTEGER
+            product_id INTEGER,
+            sold_at TEXT
         )
     """)
 
@@ -218,6 +220,21 @@ def init_db():
         )
     except Exception:
         pass
+
+    try:
+        cur.execute(
+            "ALTER TABLE items ADD COLUMN sold_at TEXT"
+        )
+    except Exception:
+        pass
+
+    # الأكواد المباعة القديمة يبدأ احتساب الـ48 ساعة لها من وقت التحديث
+
+    cur.execute("""
+        UPDATE items
+        SET sold_at = datetime('now')
+        WHERE is_sold = 1 AND sold_at IS NULL
+    """)
 
     # ترحيل السلع القديمة إلى جدول products
 
@@ -314,6 +331,42 @@ def init_db():
 
 
 init_db()
+
+
+# =========================
+# حذف المشتريات بعد 48 ساعة
+# =========================
+
+def cleanup_expired_purchases():
+    conn = get_db()
+
+    try:
+        conn.execute("""
+            DELETE FROM items
+            WHERE is_sold = 1
+            AND sold_at IS NOT NULL
+            AND datetime(sold_at) <= datetime('now', '-48 hours')
+        """)
+
+        conn.commit()
+
+    finally:
+        conn.close()
+
+
+@app.on_event("startup")
+async def start_purchase_cleanup():
+
+    async def cleanup_loop():
+        while True:
+            try:
+                cleanup_expired_purchases()
+            except Exception as exc:
+                print(f"Purchase cleanup error: {exc}")
+
+            await asyncio.sleep(3600)
+
+    asyncio.create_task(cleanup_loop())
 
 
 # =========================
@@ -548,12 +601,13 @@ def buy_item(
                 status_code=303
             )
 
-        # تحديث حالة الكود
+        # تحديث حالة الكود وتسجيل وقت الشراء
 
         conn.execute("""
             UPDATE items
             SET is_sold = 1,
-                buyer_id = ?
+                buyer_id = ?,
+                sold_at = datetime('now')
             WHERE id = ?
             AND is_sold = 0
         """, (
@@ -804,6 +858,83 @@ def admin_add_balance(
         "/admin",
         status_code=303
     )
+
+
+# =========================
+# حذف سلعة وجميع أكوادها
+# =========================
+
+@app.post("/admin/delete_product")
+def admin_delete_product(
+    request: Request,
+    product_id: int = Form(...)
+):
+    user = get_user(request)
+
+    if not user or not user["is_admin"]:
+        return RedirectResponse("/store", status_code=303)
+
+    conn = get_db()
+
+    try:
+        conn.execute(
+            "DELETE FROM items WHERE product_id = ?",
+            (product_id,)
+        )
+
+        conn.execute(
+            "DELETE FROM products WHERE id = ?",
+            (product_id,)
+        )
+
+        conn.commit()
+
+    finally:
+        conn.close()
+
+    return RedirectResponse("/admin", status_code=303)
+
+
+# =========================
+# حذف مستخدم ومشترياته
+# =========================
+
+@app.post("/admin/delete_user")
+def admin_delete_user(
+    request: Request,
+    user_id: int = Form(...)
+):
+    user = get_user(request)
+
+    if not user or not user["is_admin"]:
+        return RedirectResponse("/store", status_code=303)
+
+    # حماية حساب الإدارة الحالي
+
+    if user_id == user["id"]:
+        return RedirectResponse("/admin", status_code=303)
+
+    conn = get_db()
+
+    try:
+        conn.execute("""
+            DELETE FROM items
+            WHERE buyer_id = ?
+            AND is_sold = 1
+        """, (user_id,))
+
+        conn.execute("""
+            DELETE FROM users
+            WHERE id = ?
+            AND is_admin = 0
+        """, (user_id,))
+
+        conn.commit()
+
+    finally:
+        conn.close()
+
+    return RedirectResponse("/admin", status_code=303)
 
 
 # =========================
