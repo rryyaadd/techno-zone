@@ -96,7 +96,7 @@
       <div class="space-y-3">
         {% for item in my_items %}
         <article class="card flex flex-col gap-4 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-          <div class="flex items-center gap-3"><span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-2xl">🎮</span><div><h3 class="font-extrabold text-slate-900">{{ item.name }}</h3><p class="mt-1 text-xs text-slate-400">الكود الخاص بعملية الشراء</p></div></div>
+          <div class="flex items-center gap-3"><span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-2xl">🎮</span><div><h3 class="font-extrabold text-slate-900">{{ item.product_name or item.name }}</h3><p class="mt-1 text-xs text-slate-400">الكود الخاص بعملية الشراء</p></div></div>
           <div class="flex min-w-0 items-center gap-2 sm:w-[55%]"><code class="code min-w-0 flex-1 rounded-xl px-3 py-3 text-sm font-black text-slate-800">{{ item.secret_code }}</code><button type="button" onclick="copyCode(this)" class="shrink-0 rounded-xl bg-blue-600 px-4 py-3 text-xs font-extrabold text-white hover:bg-blue-700">نسخ الكود</button></div>
         </article>
         {% else %}
