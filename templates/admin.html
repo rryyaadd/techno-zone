@@ -1,490 +1,196 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#eef7ff">
-
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-
-  <title>لوحة الإدارة | تكنو زون</title>
-
-  <style>
-    * {
-      font-family: 'Cairo', sans-serif;
-    }
-
-    body {
-      background: #f4f8fd;
-    }
-
-    .panel {
-      background: white;
-      border: 1px solid #e6eef8;
-      box-shadow: 0 10px 30px #174a7810;
-    }
-
-    .field {
-      width: 100%;
-      border: 1px solid #dce9f8;
-      background: #f8fbff;
-      border-radius: 14px;
-      padding: 13px 15px;
-      outline: none;
-      transition: .2s;
-    }
-
-    .field:focus {
-      border-color: #369cf0;
-      box-shadow: 0 0 0 4px #dcedff;
-      background: white;
-    }
-
-    .blue-btn {
-      background: linear-gradient(100deg, #0877ef, #079fe9);
-      box-shadow: 0 7px 17px #0789e833;
-      transition: .2s;
-    }
-
-    .blue-btn:hover {
-      transform: translateY(-1px);
-      filter: brightness(1.04);
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<title>إدارة تكنو زون</title>
+<style>
+*{font-family:Cairo}
+body{background:#f4f8fd}
+.panel{background:white;border:1px solid #e5edf7;border-radius:22px;padding:22px;margin-bottom:22px}
+.field{width:100%;padding:12px;border:1px solid #dbe5f0;border-radius:12px;background:#f8fbff}
+.btn{padding:11px 16px;border-radius:12px;color:white;font-weight:800;background:#087ee8}
+.bubble{white-space:pre-wrap;overflow-wrap:anywhere}
+</style>
 </head>
-
-<body class="min-h-screen text-slate-800">
-
-  <!-- شريط التنقل -->
-  <nav class="border-b border-blue-50 bg-white shadow-sm">
-    <div class="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-
-      <div class="flex items-center gap-3">
-        <img src="/static/techno-zone-logo.png"
-             alt="شعار تكنو زون"
-             class="h-14 w-20 object-contain">
-
-        <div>
-          <h1 class="text-lg font-black">لوحة الإدارة</h1>
-          <p class="text-[10px] font-extrabold tracking-widest text-blue-600">
-            TECHNO ZONE CONTROL
-          </p>
-        </div>
-      </div>
-
-      <a href="/store"
-         class="rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-extrabold text-white transition hover:bg-blue-700 sm:text-sm">
-        ⌂ العودة إلى المتجر
-      </a>
-
-    </div>
-  </nav>
-
-
-  <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
-
-    <!-- العنوان -->
-    <header class="mb-8 rounded-[26px] bg-gradient-to-l from-[#06265b] to-[#087fd0] p-6 text-white sm:p-8">
-
-      <span class="text-xs font-bold text-sky-200">
-        مركز التحكم
-      </span>
-
-      <h2 class="mt-2 text-3xl font-black">
-        إدارة تكنو زون
-      </h2>
-
-      <p class="mt-2 text-sm text-blue-100">
-        تحكم بالمنتجات والأكواد وأرصدة العملاء من لوحة واحدة.
-      </p>
-
-    </header>
-
-
-    <!-- إضافة سلعة جديدة -->
-    <section class="panel mb-7 rounded-[26px] p-5 sm:p-8">
-
-      <div class="mb-6 flex items-center gap-3">
-
-        <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-2xl text-blue-600">
-          ＋
-        </span>
-
-        <div>
-          <h3 class="text-xl font-black">
-            إضافة سلعة جديدة
-          </h3>
-
-          <p class="mt-1 text-xs text-slate-500">
-            أضف اسم السلعة وسعرها وصورتها مرة واحدة.
-          </p>
-        </div>
-
-      </div>
-
-      <form action="/admin/add_product"
-            method="post"
-            enctype="multipart/form-data"
-            class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-
-        <label>
-          <span class="mb-2 block text-xs font-extrabold text-slate-600">
-            اسم السلعة
-          </span>
-
-          <input class="field"
-                 type="text"
-                 name="name"
-                 placeholder="أدخل اسم السلعة"
-                 required>
-        </label>
-
-        <label>
-          <span class="mb-2 block text-xs font-extrabold text-slate-600">
-            السعر بالدولار
-          </span>
-
-          <input class="field"
-                 type="number"
-                 name="price"
-                 min="0"
-                 step="0.01"
-                 placeholder="0.00"
-                 required>
-        </label>
-
-        <label>
-          <span class="mb-2 block text-xs font-extrabold text-slate-600">
-            صورة السلعة
-          </span>
-
-          <input class="field cursor-pointer text-xs"
-                 type="file"
-                 name="image"
-                 accept="image/*">
-        </label>
-
-        <div class="flex items-end">
-
-          <button type="submit"
-                  class="blue-btn w-full rounded-xl py-3.5 font-extrabold text-white">
-            ＋ إضافة السلعة
-          </button>
-
-        </div>
-
-      </form>
-
-    </section>
-
-
-    <!-- إضافة محتوى أو كود -->
-    <section class="panel mb-7 rounded-[26px] p-5 sm:p-8">
-
-      <div class="mb-6 flex items-center gap-3">
-
-        <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-2xl text-blue-600">
-          🔐
-        </span>
-
-        <div>
-          <h3 class="text-xl font-black">
-            إضافة محتوى أو كود
-          </h3>
-
-          <p class="mt-1 text-xs text-slate-500">
-            اختر السلعة وأضف الكود الخاص بها.
-          </p>
-        </div>
-
-      </div>
-
-      <form action="/admin/add_content"
-            method="post"
-            class="grid gap-4 sm:grid-cols-2">
-
-        <label>
-          <span class="mb-2 block text-xs font-extrabold text-slate-600">
-            اختر السلعة
-          </span>
-
-          <select class="field" name="product_id" required>
-
-            <option value="">
-              اختر السلعة من القائمة
-            </option>
-
-            {% for p in products %}
-
-            <option value="{{ p.id }}">
-              {{ p.name }} — {{ p.price }}$
-            </option>
-
-            {% endfor %}
-
-          </select>
-        </label>
-
-        <label>
-          <span class="mb-2 block text-xs font-extrabold text-slate-600">
-            الكود أو المحتوى
-          </span>
-
-          <input class="field"
-                 type="text"
-                 name="secret_code"
-                 placeholder="أدخل الكود السري"
-                 required>
-        </label>
-
-        <div class="sm:col-span-2">
-
-          <button type="submit"
-                  class="blue-btn w-full rounded-xl py-3.5 font-extrabold text-white">
-            ＋ إضافة المحتوى إلى السلعة
-          </button>
-
-        </div>
-
-      </form>
-
-      <p class="mt-4 text-xs text-slate-400">
-        يمكنك إضافة أكواد كثيرة للسلعة نفسها، بإضافة كل كود على حدة.
-      </p>
-
-    </section>
-
-
-    <!-- السلع المسجلة -->
-    <section class="panel mb-7 rounded-[26px] p-5 sm:p-8">
-
-      <div class="mb-6 flex items-center gap-3">
-
-        <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-2xl text-blue-600">
-          🛍️
-        </span>
-
-        <div>
-          <h3 class="text-xl font-black">
-            السلع المسجلة
-          </h3>
-
-          <p class="mt-1 text-xs text-slate-500">
-            عرض السلع وعدد الأكواد المرتبطة بكل سلعة.
-          </p>
-        </div>
-
-      </div>
-
-      <div class="space-y-3">
-
-        {% for p in products %}
-
-        <div class="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 sm:flex-row sm:items-center sm:justify-between">
-
-          <div class="flex items-center gap-3">
-
-            <div class="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-white">
-
-              {% if p.image_url %}
-
-              <img src="{{ p.image_url }}"
-                   alt="{{ p.name }}"
-                   class="h-full w-full object-cover">
-
-              {% else %}
-
-              💠
-
-              {% endif %}
-
-            </div>
-
-            <div>
-
-              <h4 class="font-extrabold text-slate-900">
-                {{ p.name }}
-              </h4>
-
-              <p class="mt-1 text-xs text-slate-500">
-                السعر: {{ p.price }}$
-              </p>
-
-            </div>
-
-          </div>
-
-          <div class="flex flex-wrap items-center gap-2">
-
-            <span class="rounded-full bg-emerald-50 px-3 py-2 text-xs font-extrabold text-emerald-700">
-              المتوفر: {{ p.available_codes or 0 }}
-            </span>
-
-            <span class="rounded-full bg-blue-50 px-3 py-2 text-xs font-extrabold text-blue-700">
-              الإجمالي: {{ p.total_codes or 0 }}
-            </span>
-
-            <span class="rounded-full bg-white px-3 py-2 text-xs font-bold text-slate-500">
-              #{{ p.id }}
-            </span>
-
-            <form action="/admin/delete_product"
-                  method="post"
-                  onsubmit="return confirm('سيتم حذف السلعة وجميع أكوادها بما فيها المباعة. هل تريد المتابعة؟');">
-
-              <input type="hidden"
-                     name="product_id"
-                     value="{{ p.id }}">
-
-              <button type="submit"
-                      class="rounded-xl bg-red-50 px-4 py-2 text-xs font-extrabold text-red-600 hover:bg-red-100">
-                حذف السلعة
-              </button>
-
-            </form>
-
-          </div>
-
-        </div>
-
-        {% else %}
-
-        <div class="rounded-2xl bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
-          لا توجد سلع مسجلة حالياً.
-        </div>
-
-        {% endfor %}
-
-      </div>
-
-    </section>
-
-
-    <!-- شحن أرصدة المستخدمين -->
-    <section class="panel rounded-[26px] p-5 sm:p-8">
-
-      <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
-
-        <div class="flex items-center gap-3">
-
-          <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-2xl font-black text-blue-600">
-            $
-          </span>
-
-          <div>
-            <h3 class="text-xl font-black">
-              شحن رصيد المستخدمين
-            </h3>
-
-            <p class="mt-1 text-xs text-slate-500">
-              أضف رصيداً إلى حساب المستخدم المطلوب.
-            </p>
-          </div>
-
-        </div>
-
-        <span class="rounded-full bg-blue-50 px-4 py-2 text-xs font-extrabold text-blue-700">
-          إدارة الأرصدة
-        </span>
-
-      </div>
-
-
-      <div class="space-y-3">
-
-        {% for u in users %}
-
-        <div class="flex flex-col gap-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 sm:flex-row sm:items-center sm:justify-between">
-
-          <div class="flex items-center gap-3">
-
-            <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-xl text-blue-600 shadow-sm">
-              ♙
-            </span>
-
-            <div>
-
-              <h4 class="font-extrabold text-slate-900">
-                {{ u.username }}
-              </h4>
-
-              <p class="mt-1 text-xs text-slate-400">
-                رقم المستخدم: {{ u.id }}
-              </p>
-
-              <p class="mt-1 text-xs font-bold text-blue-600">
-                الرصيد الحالي: {{ u.balance }}$
-              </p>
-
-            </div>
-
-          </div>
-
-
-          <form action="/admin/add_balance"
-                method="post"
-                class="flex w-full gap-2 sm:max-w-sm">
-
-            <input type="hidden"
-                   name="user_id"
-                   value="{{ u.id }}">
-
-            <input class="field min-w-0 flex-1"
-                   type="number"
-                   name="amount"
-                   min="0.01"
-                   step="0.01"
-                   placeholder="المبلغ بالدولار"
-                   required>
-
-            <button type="submit"
-                    class="blue-btn shrink-0 rounded-xl px-6 py-3 font-extrabold text-white">
-              شحن
-            </button>
-
-          </form>
-
-
-          <form action="/admin/delete_user"
-                method="post"
-                onsubmit="return confirm('سيتم حذف حساب المستخدم ومشترياته نهائياً. هل تريد المتابعة؟');">
-
-            <input type="hidden"
-                   name="user_id"
-                   value="{{ u.id }}">
-
-            <button type="submit"
-                    class="shrink-0 rounded-xl bg-red-50 px-4 py-3 text-xs font-extrabold text-red-600 hover:bg-red-100">
-              حذف المستخدم
-            </button>
-
-          </form>
-
-        </div>
-
-        {% else %}
-
-        <div class="rounded-2xl bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
-          لا يوجد مستخدمون لعرضهم حالياً.
-        </div>
-
-        {% endfor %}
-
-      </div>
-
-    </section>
-
-
-    <!-- التذييل -->
-    <footer class="mt-12 border-t border-slate-200 pt-6 text-center text-xs text-slate-400">
-      لوحة تحكم تكنو زون · ENG_RYAD
-    </footer>
-
-  </main>
-
+<body class="text-slate-800">
+
+<header class="bg-white p-4 shadow">
+<div class="mx-auto flex max-w-6xl items-center justify-between">
+<b class="text-xl">لوحة إدارة تكنو زون</b>
+<a class="btn" href="/store">المتجر</a>
+</div>
+</header>
+
+<main class="mx-auto max-w-6xl p-4">
+
+<section class="rounded-3xl bg-gradient-to-l from-blue-950 to-blue-600 p-7 text-white mb-6">
+<h1 class="text-3xl font-black">مركز التحكم</h1>
+<p>إدارة السلع والأكواد والأرصدة ومحادثات العملاء.</p>
+</section>
+
+<section class="panel">
+<h2 class="text-xl font-black mb-4">إضافة سلعة</h2>
+<form action="/admin/add_product" method="post" enctype="multipart/form-data" class="grid gap-3 sm:grid-cols-4">
+<input class="field" name="name" placeholder="اسم السلعة" required>
+<input class="field" type="number" step=".01" min="0" name="price" placeholder="السعر" required>
+<input class="field" type="file" name="image" accept="image/*">
+<button class="btn">إضافة السلعة</button>
+</form>
+</section>
+
+<section class="panel">
+<h2 class="text-xl font-black mb-2">إضافة كود</h2>
+<form action="/admin/add_content" method="post" class="grid gap-3 sm:grid-cols-2">
+<select class="field" name="product_id" required>
+<option value="">اختر السلعة</option>
+{% for p in products %}
+<option value="{{p.id}}" {% if selected_product == p.id %}selected{% endif %}>
+{{p.name}} — {{p.price}}$
+</option>
+{% endfor %}
+</select>
+<input class="field" name="secret_code" placeholder="الكود أو المحتوى" required>
+<button class="btn sm:col-span-2">إضافة المحتوى</button>
+</form>
+<p class="text-xs text-slate-500 mt-2">ستبقى السلعة المختارة محددة بعد الإضافة.</p>
+</section>
+
+<section class="panel">
+<h2 class="text-xl font-black mb-4">السلع</h2>
+<div class="space-y-3">
+{% for p in products %}
+<div class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-50 p-3">
+<div>
+<b>{{p.name}}</b>
+<p class="text-xs text-slate-500">
+{{p.price}}$ · المتاح {{p.available_codes or 0}} · الإجمالي {{p.total_codes or 0}}
+</p>
+</div>
+<form action="/admin/delete_product" method="post" onsubmit="return confirm('حذف السلعة وكل أكوادها؟')">
+<input type="hidden" name="product_id" value="{{p.id}}">
+<button class="rounded-lg bg-red-100 px-3 py-2 text-red-700">حذف</button>
+</form>
+</div>
+{% else %}
+<p>لا توجد سلع.</p>
+{% endfor %}
+</div>
+</section>
+<section class="panel">
+<div class="flex flex-wrap justify-between gap-3 mb-4">
+<h2 class="text-xl font-black">محادثات العملاء</h2>
+<a href="/admin?show_hidden=1" class="rounded-lg bg-slate-100 px-3 py-2 text-sm">عرض المخفية</a>
+</div>
+
+<div class="grid gap-4 lg:grid-cols-2">
+<div class="space-y-2">
+{% for c in conversations %}
+<a href="/admin?chat={{c.id}}{% if show_hidden %}&show_hidden=1{% endif %}" class="block rounded-xl border p-3 hover:bg-blue-50">
+<div class="flex justify-between gap-2">
+<b>{{c.username}}</b>
+<small>
+{{'مفتوحة' if c.status=='open' else ('متوقفة' if c.status=='paused' else 'مغلقة')}}
+</small>
+</div>
+<p class="text-sm text-blue-700">{{c.product_name}}</p>
+<p class="truncate text-xs text-slate-500">{{c.last_message or 'لا توجد رسائل'}}</p>
+{% if c.hidden %}
+<small class="text-red-600">مخفية</small>
+{% endif %}
+</a>
+{% else %}
+<p class="text-sm text-slate-500">لا توجد محادثات.</p>
+{% endfor %}
+</div>
+
+<div class="rounded-xl bg-slate-50 p-3">
+{% if active_chat %}
+<div class="mb-3">
+<b>{{active_chat.username}} — {{active_chat.product_name}}</b>
+<div class="flex flex-wrap gap-2 mt-2">
+
+<form action="/admin/chat/{{active_chat.id}}/status" method="post" class="flex flex-wrap gap-1">
+<button class="rounded-lg bg-green-600 px-3 py-2 text-xs text-white" name="status" value="open">فتح</button>
+<button class="rounded-lg bg-amber-500 px-3 py-2 text-xs text-white" name="status" value="paused">إيقاف مؤقت</button>
+<button class="rounded-lg bg-slate-700 px-3 py-2 text-xs text-white" name="status" value="closed">إغلاق</button>
+</form>
+
+<form action="/admin/chat/{{active_chat.id}}/hide" method="post">
+<button class="rounded-lg bg-red-100 px-3 py-2 text-xs text-red-700">إخفاء</button>
+</form>
+
+{% if active_chat.hidden %}
+<form action="/admin/chat/{{active_chat.id}}/unhide" method="post">
+<button class="rounded-lg bg-blue-100 px-3 py-2 text-xs text-blue-700">إظهار</button>
+</form>
+{% endif %}
+
+</div>
+</div>
+
+<div class="max-h-80 space-y-2 overflow-y-auto rounded-xl bg-white p-3 mb-3">
+{% for m in chat_messages %}
+<div class="flex {% if m.sender_role=='admin' %}justify-start{% else %}justify-end{% endif %}">
+<div class="bubble max-w-[85%] rounded-xl p-3 text-sm {% if m.sender_role=='admin' %}bg-blue-600 text-white{% else %}bg-slate-100{% endif %}">
+<small class="block opacity-70">
+{{'أنت' if m.sender_role=='admin' else 'العميل'}} · {{m.created_at}}
+</small>
+{{m.message}}
+</div>
+</div>
+{% else %}
+<p class="text-center text-xs text-slate-400">لا توجد رسائل.</p>
+{% endfor %}
+</div>
+
+{% if active_chat.status!='closed' %}
+<form action="/admin/chat/{{active_chat.id}}/send" method="post">
+<textarea class="field mb-2" rows="3" name="message" required placeholder="اكتب الرد أو الرابط الخاص للعميل"></textarea>
+<button class="btn w-full">إرسال</button>
+</form>
+{% else %}
+<p class="text-xs text-slate-500">المحادثة مغلقة؛ أعد فتحها للرد.</p>
+{% endif %}
+
+{% else %}
+<p class="p-8 text-center text-sm text-slate-500">اختر محادثة من القائمة.</p>
+{% endif %}
+</div>
+</div>
+</section>
+
+<section class="panel">
+<h2 class="text-xl font-black mb-4">شحن أرصدة المستخدمين</h2>
+<div class="space-y-3">
+{% for u in users %}
+<div class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-50 p-3">
+<div>
+<b>{{u.username}}</b>
+<p class="text-xs text-slate-500">#{{u.id}} · الرصيد {{u.balance}}$</p>
+</div>
+
+<div class="flex flex-wrap gap-2">
+<form action="/admin/add_balance" method="post" class="flex gap-2">
+<input type="hidden" name="user_id" value="{{u.id}}">
+<input class="field w-28" type="number" min=".01" step=".01" name="amount" placeholder="المبلغ" required>
+<button class="btn">شحن</button>
+</form>
+
+<form action="/admin/delete_user" method="post" onsubmit="return confirm('حذف المستخدم ومشترياته ومحادثاته؟')">
+<input type="hidden" name="user_id" value="{{u.id}}">
+<button class="rounded-lg bg-red-100 px-3 py-2 text-red-700">حذف</button>
+</form>
+</div>
+</div>
+{% else %}
+<p>لا يوجد مستخدمون.</p>
+{% endfor %}
+</div>
+</section>
+
+</main>
 </body>
 </html>
