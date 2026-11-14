@@ -1,63 +1,70 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#eef7ff">
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <title>لوحة الإدارة | تكنو زون</title>
-  <style>
-    *{font-family:'Cairo',sans-serif}body{background:#f4f8fd}
-    .panel{background:white;border:1px solid #e6eef8;box-shadow:0 10px 30px #174a7810}
-    .field{width:100%;border:1px solid #dce9f8;background:#f8fbff;border-radius:14px;padding:13px 15px;outline:none;transition:.2s}
-    .field:focus{border-color:#369cf0;box-shadow:0 0 0 4px #dcedff;background:white}
-    .blue-btn{background:linear-gradient(100deg,#0877ef,#079fe9);box-shadow:0 7px 17px #0789e833;transition:.2s}
-    .blue-btn:hover{transform:translateY(-1px);filter:brightness(1.04)}
-  </style>
-</head>
-<body class="min-h-screen text-slate-800">
-  <nav class="border-b border-blue-50 bg-white shadow-sm">
-    <div class="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-      <div class="flex items-center gap-3"><img src="/static/techno-zone-logo.png" alt="شعار تكنو زون" class="h-14 w-20 object-contain"><div><h1 class="text-lg font-black">لوحة الإدارة</h1><p class="text-[10px] font-extrabold tracking-widest text-blue-600">TECHNO ZONE CONTROL</p></div></div>
-      <a href="/store" class="rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-extrabold text-white transition hover:bg-blue-700 sm:text-sm">⌂ العودة إلى المتجر</a>
-    </div>
-  </nav>
 
-  <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
-    <header class="mb-8 rounded-[26px] bg-gradient-to-l from-[#06265b] to-[#087fd0] p-6 text-white sm:p-8"><span class="text-xs font-bold text-sky-200">مركز التحكم</span><h2 class="mt-2 text-3xl font-black">إدارة تكنو زون</h2><p class="mt-2 text-sm text-blue-100">تحكم بالمنتجات وأرصدة العملاء من لوحة واحدة.</p></header>
+<section class="panel mb-7 rounded-[26px] p-5 sm:p-8">
+  <h3 class="mb-2 text-xl font-black">إضافة سلعة جديدة</h3>
+  <p class="mb-5 text-xs text-slate-500">أضف اسم السلعة وسعرها وصورتها مرة واحدة.</p>
 
-    <section class="panel mb-7 rounded-[26px] p-5 sm:p-8">
-      <div class="mb-6 flex items-center gap-3"><span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-2xl text-blue-600">＋</span><div><h3 class="text-xl font-black">إضافة سلعة جديدة</h3><p class="mt-1 text-xs text-slate-500">أضف منتجاً رقمياً جديداً إلى قائمة المتجر.</p></div></div>
-      <form action="/admin/add_item" method="post" enctype="multipart/form-data" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <label><span class="mb-2 block text-xs font-extrabold text-slate-600">اسم الخدمة</span><input class="field" type="text" name="name" placeholder="أدخل اسم الخدمة" required></label>
-        <label><span class="mb-2 block text-xs font-extrabold text-slate-600">الكود السري</span><input class="field" type="text" name="secret_code" placeholder="أدخل الكود السري" required></label>
-        <label><span class="mb-2 block text-xs font-extrabold text-slate-600">السعر ($)</span><input class="field" type="number" name="price" min="0" step="0.01" placeholder="0.00" required></label>
-        <label><span class="mb-2 block text-xs font-extrabold text-slate-600">صورة السلعة</span><input class="field cursor-pointer text-xs" type="file" name="image" accept="image/*"></label>
-        <div class="flex items-end"><button class="blue-btn w-full rounded-xl py-3.5 font-extrabold text-white" type="submit">＋ إضافة السلعة</button></div>
-      </form>
-    </section>
+  <form action="/admin/add_product" method="post"
+        enctype="multipart/form-data"
+        class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 
-    <section class="panel rounded-[26px] p-5 sm:p-8">
-      <div class="mb-6 flex flex-wrap items-center justify-between gap-3"><div class="flex items-center gap-3"><span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-2xl font-black text-blue-600">$</span><div><h3 class="text-xl font-black">شحن رصيد المستخدمين</h3><p class="mt-1 text-xs text-slate-500">أضف رصيداً إلى حساب المستخدم المطلوب.</p></div></div><span class="rounded-full bg-blue-50 px-4 py-2 text-xs font-extrabold text-blue-700">إدارة الأرصدة</span></div>
-      <div class="space-y-3">
-        {% for u in users %}
-        <div class="flex flex-col gap-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div class="flex items-center gap-3"><span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-xl text-blue-600 shadow-sm">♙</span><div><h4 class="font-extrabold text-slate-900">{{ u.username }}</h4><p class="mt-1 text-xs text-slate-400">رقم المستخدم: {{ u.id }}</p></div></div>
-          <form action="/admin/add_balance" method="post" class="flex w-full gap-2 sm:max-w-sm">
-            <input type="hidden" name="user_id" value="{{ u.id }}">
-            <input class="field min-w-0 flex-1" type="number" name="amount" min="0.01" step="0.01" placeholder="المبلغ بالدولار" required>
-            <button type="submit" class="blue-btn shrink-0 rounded-xl px-6 py-3 font-extrabold text-white">شحن</button>
-          </form>
-        </div>
-        {% else %}
-        <div class="rounded-2xl bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">لا يوجد مستخدمون لعرضهم حالياً.</div>
-        {% endfor %}
+    <input class="field" type="text" name="name"
+           placeholder="اسم السلعة" required>
+
+    <input class="field" type="number" name="price"
+           min="0" step="0.01" placeholder="السعر بالدولار" required>
+
+    <input class="field" type="file" name="image"
+           accept="image/*">
+
+    <button class="blue-btn rounded-xl py-3 font-extrabold text-white">
+      إضافة السلعة
+    </button>
+  </form>
+</section>
+
+<section class="panel mb-7 rounded-[26px] p-5 sm:p-8">
+  <h3 class="mb-2 text-xl font-black">إضافة محتوى أو كود</h3>
+  <p class="mb-5 text-xs text-slate-500">اختر السلعة ثم أضف الكود الخاص بها.</p>
+
+  <form action="/admin/add_content" method="post"
+        class="grid gap-4 sm:grid-cols-2">
+
+    <select class="field" name="product_id" required>
+      <option value="">اختر السلعة</option>
+      {% for p in products %}
+      <option value="{{ p.id }}">
+        {{ p.name }} — {{ p.price }}$
+      </option>
+      {% endfor %}
+    </select>
+
+    <input class="field" type="text" name="secret_code"
+           placeholder="أدخل الكود أو المحتوى" required>
+
+    <button class="blue-btn rounded-xl py-3 font-extrabold text-white sm:col-span-2">
+      إضافة المحتوى
+    </button>
+  </form>
+</section>
+
+<section class="panel mb-7 rounded-[26px] p-5 sm:p-8">
+  <h3 class="mb-5 text-xl font-black">السلع المسجلة</h3>
+
+  <div class="space-y-3">
+    {% for p in products %}
+    <div class="flex items-center justify-between gap-3 rounded-xl border p-4">
+      <div>
+        <strong>{{ p.name }}</strong>
+        <p class="text-xs text-slate-500">
+          السعر: {{ p.price }}$ |
+          الأكواد المتوفرة: {{ p.available_codes or 0 }} |
+          إجمالي الأكواد: {{ p.total_codes or 0 }}
+        </p>
       </div>
-    </section>
-    <footer class="mt-12 border-t border-slate-200 pt-6 text-center text-xs text-slate-400">لوحة تحكم تكنو زون · ENG_RYAD</footer>
-  </main>
-</body>
-</html>
+      <span class="text-xs font-bold text-blue-600">#{{ p.id }}</span>
+    </div>
+    {% else %}
+    <p class="text-center text-slate-500">لا توجد سلع حالياً.</p>
+    {% endfor %}
+  </div>
+</section>
