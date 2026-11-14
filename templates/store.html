@@ -1,119 +1,288 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#eef7ff">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <script src="https://cdn.tailwindcss.com"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <title>المتجر | تكنو زون</title>
-  <style>
-    *{font-family:'Cairo',sans-serif}body{background:#f4f8fd}
-    .nav{background:#ffffffed;backdrop-filter:blur(16px);box-shadow:0 5px 25px #173f6810}
-    .hero{background:linear-gradient(110deg,#061e4d 0%,#064b91 54%,#087fd0 100%);position:relative;overflow:hidden}
-    .hero:before{content:"";position:absolute;width:360px;height:360px;border:45px solid #ffffff12;border-radius:50%;left:-100px;top:-170px}
-    .hero:after{content:"";position:absolute;width:260px;height:260px;border:1px solid #70caff55;border-radius:50%;left:16%;bottom:-190px;box-shadow:0 0 0 35px #70caff0b,0 0 0 75px #70caff0b}
-    .card{background:white;border:1px solid #e8eff8;box-shadow:0 8px 25px #174a7810;transition:.25s}
-    .card:hover{transform:translateY(-5px);box-shadow:0 18px 35px #174a781c}
-    .blue-btn{background:linear-gradient(100deg,#0877ef,#079fe9);box-shadow:0 7px 17px #0789e833;transition:.2s}
-    .blue-btn:hover{transform:translateY(-1px);filter:brightness(1.04)}
-    .code{background:#f0f8ff;border:1px dashed #a6d6fa;overflow-wrap:anywhere}
-    .logo{height:62px;width:92px;object-fit:contain}
-  </style>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<title>تكنو زون</title>
+
+<style>
+*{font-family:Cairo}
+body{background:#f4f8fd}
+.card{
+background:white;
+border:1px solid #e5edf7;
+box-shadow:0 7px 22px #174a7810;
+border-radius:22px
+}
+.btn{
+background:#087ee8;
+color:white;
+padding:12px;
+border-radius:12px;
+font-weight:800
+}
+.bubble{
+white-space:pre-wrap;
+overflow-wrap:anywhere
+}
+.field{
+width:100%;
+border:1px solid #dbe5f0;
+border-radius:12px;
+padding:12px
+}
+</style>
 </head>
-<body class="min-h-screen text-slate-800">
-  <nav class="nav sticky top-0 z-30 border-b border-blue-50">
-    <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
-      <a href="/store" class="flex items-center gap-2"><img src="/static/techno-zone-logo.png" alt="شعار تكنو زون" class="logo"><span class="hidden sm:block"><b class="block text-lg font-black text-slate-950">تكنو زون</b><small class="font-bold tracking-widest text-blue-600">TECHNO ZONE</small></span></a>
-      <div class="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
-        <span class="rounded-full bg-blue-50 px-3 py-2 font-bold text-blue-900">مرحباً، {{ user.username }}</span>
-        <span class="rounded-full border border-blue-100 bg-white px-3 py-2 font-extrabold text-blue-700">الرصيد: {{ user.balance }}$</span>
-        {% if user.is_admin %}
-        <a href="/admin" class="rounded-full bg-slate-900 px-3 py-2 font-bold text-white hover:bg-slate-700">لوحة الإدارة</a>
-        {% endif %}
-        <a href="/logout" class="rounded-full bg-blue-600 px-4 py-2 font-bold text-white hover:bg-blue-700">تسجيل الخروج</a>
-      </div>
-    </div>
-  </nav>
 
-  <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-9">
-    <section class="hero mb-9 rounded-[28px] px-6 py-9 text-white shadow-xl shadow-blue-900/10 sm:px-10 sm:py-12">
-      <div class="relative z-10 grid items-center gap-8 md:grid-cols-[1fr_auto]">
-        <div><span class="inline-flex rounded-full border border-sky-300/40 bg-sky-300/15 px-4 py-1.5 text-xs font-bold text-sky-100">متجرك الرقمي الموثوق</span>
-          <h1 class="mt-4 text-3xl font-black leading-tight sm:text-5xl">تكنو زون</h1>
-          <p class="mt-2 text-lg font-bold text-sky-100 sm:text-2xl">متجرك الأول للسلع الرقمية</p>
-          <p class="mt-4 max-w-xl text-sm leading-7 text-blue-100">اكتشف الأكواد والحسابات الرقمية، وتسوق بسهولة واحصل على مشترياتك في مكان واحد.</p>
-          <div class="mt-6 inline-flex items-center gap-2 rounded-full bg-sky-400/20 px-4 py-2 text-xs font-bold text-sky-100">✦ تجربة رقمية سهلة وسريعة</div>
-        </div>
-        <div class="relative mx-auto flex h-44 w-44 items-center justify-center rounded-[42px] border border-white/20 bg-white/10 shadow-2xl backdrop-blur md:ml-8"><span class="text-8xl">📱</span><span class="absolute -right-5 top-2 rounded-2xl bg-white p-3 text-3xl shadow-xl">🔐</span><span class="absolute -bottom-4 -left-5 rounded-2xl bg-white p-3 text-3xl shadow-xl">⚡</span></div>
-      </div>
-    </section>
+<body class="text-slate-800">
 
-    <section class="mb-11">
-      <div class="mb-5 flex items-end justify-between"><div><p class="text-xs font-extrabold text-blue-600">تسوق الآن</p><h2 class="mt-1 text-2xl font-black text-slate-950 sm:text-3xl">السلع المتوفرة <span class="text-blue-600">🛒</span></h2></div><span class="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-slate-500 shadow-sm">منتجات رقمية</span></div>
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {% for item in items %}
-        <article class="card flex flex-col rounded-[25px] p-5">
-          <div class="mb-5 flex items-start justify-between gap-3">
-            <div class="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-blue-50 to-sky-100 text-3xl">
-              {% if item.image_url %}
-              <img src="{{ item.image_url }}" alt="{{ item.name }}" class="h-full w-full object-cover">
-              {% else %}
-              💠
-              {% endif %}
-            </div>
-            <span class="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-extrabold text-emerald-700">متوفر: {{ item.stock }}</span>
-          </div>
-          <h3 class="min-h-[52px] text-lg font-black text-slate-900">{{ item.name }}</h3>
-          <div class="mt-3 flex items-center justify-between border-t border-slate-100 pt-4"><span class="text-xs text-slate-400">السعر</span><strong class="text-2xl font-black text-sky-600">{{ item.price }}$</strong></div>
-          
-<form action="/buy" method="post" class="mt-5"
-      onsubmit="return confirm('هل أنت متأكد من رغبتك في شراء هذا المنتج؟');">
+<nav class="sticky top-0 bg-white p-4 shadow z-10">
+<div class="mx-auto flex max-w-6xl flex-wrap justify-between gap-2">
 
-  <input type="hidden" name="product_id" value="{{ item.id }}">
+<b class="text-xl">تكنو زون</b>
 
-  <button type="submit"
-          {% if item.stock < 1 %}disabled{% endif %}
-          class="blue-btn w-full rounded-xl py-3 font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-40">
-    {% if item.stock > 0 %}
-      شراء الآن 🛒
-    {% else %}
-      غير متوفر حالياً
-    {% endif %}
-  </button>
+<div class="flex flex-wrap gap-2 text-sm">
+<span class="rounded-xl bg-blue-50 p-2">
+مرحباً {{user.username}}
+</span>
+
+<span class="rounded-xl bg-blue-50 p-2">
+الرصيد {{user.balance}}$
+</span>
+
+{% if user.is_admin %}
+<a class="btn" href="/admin">الإدارة</a>
+{% endif %}
+
+<a class="btn" href="/logout">خروج</a>
+</div>
+
+</div>
+</nav>
+
+<main class="mx-auto max-w-6xl p-4">
+
+<section class="mb-8 rounded-3xl bg-gradient-to-l from-blue-950 to-sky-600 p-8 text-white">
+<h1 class="text-4xl font-black">تكنو زون</h1>
+<p class="mt-2">متجرك الأول للسلع الرقمية</p>
+</section>
+
+<section class="mb-10">
+
+<h2 class="mb-4 text-2xl font-black">
+السلع المتوفرة 🛒
+</h2>
+
+<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
+{% for p in items %}
+
+<article class="card p-5">
+
+<div class="mb-3 flex h-24 items-center justify-center overflow-hidden rounded-xl bg-blue-50">
+
+{% if p.image_url %}
+<img src="{{p.image_url}}" class="h-full w-full object-cover">
+{% else %}
+💠
+{% endif %}
+
+</div>
+
+<h3 class="font-black">{{p.name}}</h3>
+
+<p class="my-3 text-blue-700 font-black">
+{{p.price}}$ · متوفر {{p.stock}}
+</p>
+
+<form action="/buy" method="post" onsubmit="return confirm('تأكيد الشراء؟')">
+
+<input type="hidden" name="product_id" value="{{p.id}}">
+
+<button class="btn w-full" {% if p.stock<1 %}disabled{% endif %}>
+شراء الآن
+</button>
+
 </form>
-        </article>
-        {% else %}
-        <div class="card col-span-full rounded-3xl p-10 text-center text-sm text-slate-500">لا توجد منتجات متاحة حالياً.</div>
-        {% endfor %}
-      </div>
-    </section>
+</article>
 
-    <section>
-      <div class="mb-5"><p class="text-xs font-extrabold text-blue-600">مكتبتك الرقمية</p><h2 class="mt-1 text-2xl font-black text-slate-950 sm:text-3xl">مشترياتي <span class="text-blue-600">▤</span></h2></div>
-      <div class="space-y-3">
-        {% for item in my_items %}
-        <article class="card flex flex-col gap-4 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-          <div class="flex items-center gap-3"><span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-2xl">🎮</span><div><h3 class="font-extrabold text-slate-900">{{ item.product_name or item.name }}</h3><p class="mt-1 text-xs text-slate-400">الكود الخاص بعملية الشراء</p></div></div>
-          <div class="flex min-w-0 items-center gap-2 sm:w-[55%]"><code class="code min-w-0 flex-1 rounded-xl px-3 py-3 text-sm font-black text-slate-800">{{ item.secret_code }}</code><button type="button" onclick="copyCode(this)" class="shrink-0 rounded-xl bg-blue-600 px-4 py-3 text-xs font-extrabold text-white hover:bg-blue-700">نسخ الكود</button></div>
-        </article>
-        {% else %}
-        <div class="card rounded-3xl p-9 text-center text-sm text-slate-500">لم تقم بشراء أي منتجات بعد.</div>
-        {% endfor %}
-      </div>
-    </section>
-    <footer class="mt-14 border-t border-slate-200 py-6 text-center text-xs text-slate-400">© تكنو زون · جميع الحقوق محفوظة · ENG_RYAD</footer>
-  </main>
-  <script>
-    function copyCode(button){
-      const code=button.parentElement.querySelector('code').textContent.trim();
-      const done=()=>{button.textContent='تم النسخ ✓';setTimeout(()=>button.textContent='نسخ الكود',1500)};
-      if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(code).then(done);return;}
-      const input=document.createElement('textarea');input.value=code;document.body.appendChild(input);input.select();
-      try{document.execCommand('copy');done();}catch(e){button.textContent='انسخ يدوياً';}input.remove();
-    }
-  </script>
+{% else %}
+
+<p>لا توجد منتجات حالياً.</p>
+
+{% endfor %}
+
+</div>
+</section>
+
+<section class="mb-10">
+
+<h2 class="mb-4 text-2xl font-black">
+مشترياتي
+</h2>
+
+<div class="space-y-3">
+
+{% for p in my_items %}
+
+<div class="card flex flex-wrap items-center justify-between gap-3 p-4">
+
+<div>
+<b>{{p.product_name or p.name}}</b>
+<p class="text-xs text-slate-500">الكود الخاص بك</p>
+</div>
+
+<code class="rounded-lg bg-blue-50 p-3">
+{{p.secret_code}}
+</code>
+
+</div>
+
+{% else %}
+
+<div class="card p-6 text-center text-sm">
+لم تشترِ أي منتجات بعد.
+</div>
+
+{% endfor %}
+
+</div>
+</section>
+
+<section class="mb-8">
+
+<h2 class="mb-3 text-2xl font-black">
+محادثاتي مع الإدارة 💬
+</h2>
+
+<div class="grid gap-3 sm:grid-cols-2">
+
+{% for c in conversations %}
+
+<a class="card block p-4" href="/chat/{{c.id}}">
+
+<div class="flex justify-between gap-2">
+
+<b>{{c.product_name}}</b>
+
+<small>
+{{'مفتوحة' if c.status=='open' else ('متوقفة' if c.status=='paused' else 'مغلقة')}}
+</small>
+
+</div>
+
+<p class="mt-2 truncate text-xs text-slate-500">
+{{c.last_message or 'ابدأ المحادثة'}}
+</p>
+
+<span class="mt-2 block text-sm font-bold text-blue-700">
+فتح المحادثة ←
+</span>
+
+</a>
+
+{% else %}
+
+<div class="card p-6 text-center text-sm">
+ستظهر محادثتك هنا بعد شراء سلعة.
+</div>
+
+{% endfor %}
+
+</div>
+</section>
+{% if active_chat %}
+
+<section class="card mb-8 p-5">
+
+<div class="mb-3 flex justify-between gap-2">
+
+<div>
+<h2 class="font-black text-xl">
+{{active_chat.product_name}}
+</h2>
+
+<p class="text-xs text-slate-500">
+محادثة خاصة مع الإدارة
+</p>
+</div>
+
+<a href="/store" class="rounded-lg bg-slate-100 px-3 py-2 text-xs">
+إغلاق النافذة
+</a>
+
+</div>
+
+<div class="mb-3 max-h-96 space-y-2 overflow-y-auto rounded-xl bg-slate-50 p-3">
+
+{% for m in chat_messages %}
+
+<div class="flex {% if m.sender_role=='customer' %}justify-start{% else %}justify-end{% endif %}">
+
+<div class="bubble max-w-[88%] rounded-xl p-3 text-sm {% if m.sender_role=='customer' %}bg-blue-600 text-white{% else %}bg-white{% endif %}">
+
+<small class="block opacity-70">
+{{'أنت' if m.sender_role=='customer' else 'إدارة تكنو زون'}} · {{m.created_at}}
+</small>
+
+{{m.message}}
+
+</div>
+</div>
+
+{% else %}
+
+<p class="p-6 text-center text-xs text-slate-400">
+ابدأ بإرسال رسالة.
+</p>
+
+{% endfor %}
+
+</div>
+
+{% if active_chat.status=='open' %}
+
+<form action="/chat/{{active_chat.id}}/send" method="post">
+
+<textarea
+class="field mb-2"
+name="message"
+rows="3"
+maxlength="5000"
+required
+placeholder="اكتب رسالتك أو بريدك الإلكتروني هنا">
+</textarea>
+
+<button class="btn w-full">
+إرسال الرسالة
+</button>
+
+</form>
+
+{% elif active_chat.status=='paused' %}
+
+<p class="rounded-xl bg-amber-50 p-3 text-center text-xs">
+المحادثة متوقفة مؤقتاً من الإدارة.
+</p>
+
+{% else %}
+
+<p class="rounded-xl bg-slate-100 p-3 text-center text-xs">
+المحادثة مغلقة من الإدارة.
+</p>
+
+{% endif %}
+
+</section>
+
+{% endif %}
+
+<footer class="border-t py-5 text-center text-xs text-slate-400">
+© تكنو زون · جميع الحقوق محفوظة
+</footer>
+
+</main>
 </body>
 </html>
