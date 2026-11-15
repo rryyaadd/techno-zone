@@ -1,3 +1,4 @@
+
 from fastapi import FastAPI, Request, Form, UploadFile, File
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
@@ -357,7 +358,9 @@ def init_db():
         """)
     except Exception as error:
         print("Product linking migration:", error)
-            try:
+
+    # ترحيل المشتريات القديمة
+    try:
         old_items = c.execute("""
             SELECT *
             FROM items
@@ -427,6 +430,8 @@ def init_db():
 
 
 init_db()
+
+
 # ==========================================
 # تنظيف الأكواد المباعة القديمة
 # ==========================================
@@ -693,7 +698,6 @@ def store(request: Request):
     if not get_user(request):
         return redirect("/login")
 
-    # السماح للمدير بفتح المتجر أيضاً
     return templates.TemplateResponse(
         request=request,
         name="store.html",
@@ -737,7 +741,7 @@ def customer_send(
     cid: int,
     message: str = Form(...)
 ):
-        user = get_user(request)
+    user = get_user(request)
 
     if not user or user.get("is_admin"):
         return action_response(
@@ -1139,7 +1143,7 @@ def admin(
     if selected_product:
         selected_product_data = db.execute("""
             SELECT *
-                     FROM products
+            FROM products
             WHERE id=?
         """, (selected_product,)).fetchone()
 
