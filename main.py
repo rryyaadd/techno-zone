@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI, Request, Form, UploadFile, File
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
@@ -1414,7 +1413,7 @@ async def add_product(
 
 
 # ==========================================
-# إضافة أكواد للمنتج
+# إضافة محتوى للمنتج
 # ==========================================
 
 @app.post("/admin/add_content")
@@ -1425,7 +1424,21 @@ def add_content(
 ):
     if not is_admin(request):
         return action_response(
-            request, "غير مصرح", "/login", False
+            request,
+            "غير مصرح",
+            "/login",
+            False
+        )
+
+    # الاحتفاظ بجميع الأسطر داخل محتوى واحد
+    content = secret_code.strip()
+
+    if not content:
+        return action_response(
+            request,
+            "المحتوى فارغ",
+            "/admin",
+            False
         )
 
     db = get_db()
@@ -1438,41 +1451,38 @@ def add_content(
 
     if not product or not product["requires_content"]:
         db.close()
+
         return action_response(
-            request, "المنتج غير موجود أو لا يقبل الأكواد",
-            "/admin", False
+            request,
+            "المنتج غير موجود أو لا يقبل المحتوى",
+            "/admin",
+            False
         )
 
-    lines = [
-        line.strip()
-        for line in secret_code.splitlines()
-        if line.strip()
-    ]
-
-    for line in lines:
-        db.execute("""
-            INSERT INTO items(
-                name,
-                secret_code,
-                price,
-                is_sold,
-                product_id
-            )
-            VALUES(?,?,?,0,?)
-        """, (
-            product["name"],
-            line,
-            product["price"],
+    # حفظ المحتوى كاملاً في سجل واحد
+    db.execute("""
+        INSERT INTO items(
+            name,
+            secret_code,
+            price,
+            is_sold,
             product_id
-        ))
+        )
+        VALUES(?,?,?,0,?)
+    """, (
+        product["name"],
+        content,
+        product["price"],
+        product_id
+    ))
 
     db.commit()
     db.close()
 
     return action_response(
         request,
-        f"تمت إضافة {len(lines)} كود",
-        f"/admin?selected_product={product_id}"
+        "تمت إضافة المحتوى بنجاح",
+        "/admin"
     )
 
 
@@ -1640,6 +1650,7 @@ def delete_product(
         DELETE FROM products
         WHERE id=?
     """, (product_id,))
+
     db.commit()
     db.close()
 
