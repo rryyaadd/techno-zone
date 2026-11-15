@@ -1,288 +1,307 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<title>تكنو زون</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Techno Zone</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
 
-<style>
-*{font-family:Cairo}
-body{background:#f4f8fd}
-.card{
-background:white;
-border:1px solid #e5edf7;
-box-shadow:0 7px 22px #174a7810;
-border-radius:22px
-}
-.btn{
-background:#087ee8;
-color:white;
-padding:12px;
-border-radius:12px;
-font-weight:800
-}
-.bubble{
-white-space:pre-wrap;
-overflow-wrap:anywhere
-}
-.field{
-width:100%;
-border:1px solid #dbe5f0;
-border-radius:12px;
-padding:12px
-}
-</style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #101827;
+            color: #fff;
+        }
+
+        header {
+            background: #17243a;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 2px solid #00c8ff;
+        }
+
+        header h1 {
+            margin: 0;
+            color: #00c8ff;
+            font-size: 28px;
+        }
+
+        header p {
+            color: #b8c7d9;
+            margin-bottom: 0;
+        }
+
+        .container {
+            width: 94%;
+            max-width: 1100px;
+            margin: 25px auto;
+        }
+
+        h2 {
+            color: #00c8ff;
+            border-right: 4px solid #00c8ff;
+            padding-right: 10px;
+            margin-top: 30px;
+        }
+
+        .products {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 18px;
+        }
+
+        .product, .purchase, .chat-box {
+            background: #1b2a41;
+            border: 1px solid #30445f;
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .product img {
+            width: 100%;
+            height: 160px;
+            object-fit: contain;
+            border-radius: 8px;
+            background: #fff;
+        }
+
+        .product h3 {
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .description {
+            color: #b8c7d9;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        .price {
+            color: #00e0a4;
+            font-size: 19px;
+            font-weight: bold;
+        }
+
+        button, .button {
+            border: none;
+            border-radius: 8px;
+            padding: 11px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 8px;
+        }
+
+        .buy-btn {
+            background: #00c8ff;
+            color: #071522;
+            width: 100%;
+            font-weight: bold;
+        }
+
+        .whatsapp-btn {
+            background: #20c767;
+            color: white;
+            width: 100%;
+            text-align: center;
+        }
+
+        .delete-btn {
+            background: #d94343;
+            color: white;
+        }
+
+        .status {
+            color: #00e0a4;
+            font-size: 13px;
+        }
+
+        .empty {
+            color: #aab8c8;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .purchase {
+            margin-bottom: 12px;
+        }
+
+        .purchase p {
+            line-height: 1.7;
+            overflow-wrap: anywhere;
+        }
+
+        .code {
+            background: #101827;
+            color: #00e0a4;
+            padding: 10px;
+            border-radius: 7px;
+            direction: ltr;
+            text-align: left;
+            overflow-wrap: anywhere;
+        }
+    </style>
 </head>
 
-<body class="text-slate-800">
+<body>
 
-<nav class="sticky top-0 bg-white p-4 shadow z-10">
-<div class="mx-auto flex max-w-6xl flex-wrap justify-between gap-2">
+<header>
+    <h1>Techno Zone</h1>
+    <p>متجرك التقني للخدمات والمنتجات الرقمية</p>
+</header>
 
-<b class="text-xl">تكنو زون</b>
+<div class="container">
 
-<div class="flex flex-wrap gap-2 text-sm">
-<span class="rounded-xl bg-blue-50 p-2">
-مرحباً {{user.username}}
-</span>
+    <h2>المنتجات المتوفرة</h2>
 
-<span class="rounded-xl bg-blue-50 p-2">
-الرصيد {{user.balance}}$
-</span>
+    <div class="products">
+        {% for item in items %}
+        <div class="product">
 
-{% if user.is_admin %}
-<a class="btn" href="/admin">الإدارة</a>
-{% endif %}
+            {% if item.image %}
+            <img src="{{ item.image }}" alt="{{ item.name }}">
+            {% endif %}
 
-<a class="btn" href="/logout">خروج</a>
-</div>
+            <h3>{{ item.name }}</h3>
 
-</div>
-</nav>
+            {% if item.description %}
+            <p class="description">{{ item.description }}</p>
+            {% endif %}
 
-<main class="mx-auto max-w-6xl p-4">
+            <p class="price">{{ item.price }}</p>
 
-<section class="mb-8 rounded-3xl bg-gradient-to-l from-blue-950 to-sky-600 p-8 text-white">
-<h1 class="text-4xl font-black">تكنو زون</h1>
-<p class="mt-2">متجرك الأول للسلع الرقمية</p>
-</section>
+            {% if item.stock > 0 or not item.requires_content %}
+                <span class="status">متوفر</span>
 
-<section class="mb-10">
+                <form action="/buy" method="post">
+                    <input type="hidden" name="product_id"
+                           value="{{ item.id }}">
+                    <button class="buy-btn" type="submit">
+                        شراء الآن
+                    </button>
+                </form>
+            {% else %}
+                <span style="color:#ff7777">غير متوفر حالياً</span>
+            {% endif %}
 
-<h2 class="mb-4 text-2xl font-black">
-السلع المتوفرة 🛒
-</h2>
+        </div>
+        {% else %}
+        <p class="empty">لا توجد منتجات حالياً.</p>
+        {% endfor %}
+    </div>
 
-<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <h2>مشترياتي</h2>
 
-{% for p in items %}
+    {% for purchase in my_items %}
+    <div class="purchase">
 
-<article class="card p-5">
+        <h3>{{ purchase.product_name }}</h3>
+        <p>تاريخ الشراء: {{ purchase.created_at }}</p>
 
-<div class="mb-3 flex h-24 items-center justify-center overflow-hidden rounded-xl bg-blue-50">
+        {% if purchase.secret_code %}
+        <p>الكود الخاص بك:</p>
+        <div class="code">{{ purchase.secret_code }}</div>
+        {% endif %}
 
-{% if p.image_url %}
-<img src="{{p.image_url}}" class="h-full w-full object-cover">
-{% else %}
-💠
-{% endif %}
+        <form action="/purchase/{{ purchase.id }}/hide"
+              method="post"
+              onsubmit="return confirm('هل تريد إخفاء عملية الشراء من سجلك؟');">
+            <button class="delete-btn" type="submit">
+                حذف من سجلي
+            </button>
+        </form>
 
-</div>
+    </div>
+    {% else %}
+    <p class="empty">لم تقم بأي عملية شراء حتى الآن.</p>
+    {% endfor %}
+      <h2>التواصل مع الإدارة</h2>
 
-<h3 class="font-black">{{p.name}}</h3>
+    <a class="button whatsapp-btn"
+       href="https://wa.me/967778105690"
+       target="_blank">
+        تواصل معنا عبر واتساب
+    </a>
 
-<p class="my-3 text-blue-700 font-black">
-{{p.price}}$ · متوفر {{p.stock}}
-</p>
+    <h2>محادثاتي مع الإدارة</h2>
 
-<form action="/buy" method="post" onsubmit="return confirm('تأكيد الشراء؟')">
+    {% for chat in conversations %}
+    <div class="chat-box">
+        <p>المحادثة رقم: {{ chat.id }}</p>
+        <p>الحالة: {{ chat.status }}</p>
 
-<input type="hidden" name="product_id" value="{{p.id}}">
+        <a class="button"
+           style="background:#00c8ff;color:#071522"
+           href="/chat/{{ chat.id }}">
+            فتح المحادثة
+        </a>
+    </div>
+    {% else %}
+    <p class="empty">لا توجد محادثات حالياً.</p>
+    {% endfor %}
 
-<button class="btn w-full" {% if p.stock<1 %}disabled{% endif %}>
-شراء الآن
-</button>
+    {% if active_chat %}
+    <h2>المحادثة</h2>
 
-</form>
-</article>
+    <div class="chat-box">
+        <p>حالة المحادثة: {{ active_chat.status }}</p>
 
-{% else %}
+        {% for message in messages %}
+        <div style="
+            background:#101827;
+            padding:10px;
+            border-radius:8px;
+            margin:10px 0;
+            overflow-wrap:anywhere;
+        ">
+            <strong>{{ message.sender }}:</strong>
+            <p>{{ message.message }}</p>
+        </div>
+        {% else %}
+        <p class="empty">لا توجد رسائل بعد.</p>
+        {% endfor %}
 
-<p>لا توجد منتجات حالياً.</p>
+        {% if active_chat.status == 'open' %}
+        <form action="/chat/{{ active_chat.id }}/send"
+              method="post">
 
-{% endfor %}
+            <textarea name="message"
+                      required
+                      placeholder="اكتب رسالتك للإدارة..."
+                      style="
+                        width:100%;
+                        min-height:90px;
+                        padding:12px;
+                        border-radius:8px;
+                        margin-top:10px;
+                        font-family:Arial;
+                      "></textarea>
 
-</div>
-</section>
-
-<section class="mb-10">
-
-<h2 class="mb-4 text-2xl font-black">
-مشترياتي
-</h2>
-
-<div class="space-y-3">
-
-{% for p in my_items %}
-
-<div class="card flex flex-wrap items-center justify-between gap-3 p-4">
-
-<div>
-<b>{{p.product_name or p.name}}</b>
-<p class="text-xs text-slate-500">الكود الخاص بك</p>
-</div>
-
-<code class="rounded-lg bg-blue-50 p-3">
-{{p.secret_code}}
-</code>
-
-</div>
-
-{% else %}
-
-<div class="card p-6 text-center text-sm">
-لم تشترِ أي منتجات بعد.
-</div>
-
-{% endfor %}
-
-</div>
-</section>
-
-<section class="mb-8">
-
-<h2 class="mb-3 text-2xl font-black">
-محادثاتي مع الإدارة 💬
-</h2>
-
-<div class="grid gap-3 sm:grid-cols-2">
-
-{% for c in conversations %}
-
-<a class="card block p-4" href="/chat/{{c.id}}">
-
-<div class="flex justify-between gap-2">
-
-<b>{{c.product_name}}</b>
-
-<small>
-{{'مفتوحة' if c.status=='open' else ('متوقفة' if c.status=='paused' else 'مغلقة')}}
-</small>
-
-</div>
-
-<p class="mt-2 truncate text-xs text-slate-500">
-{{c.last_message or 'ابدأ المحادثة'}}
-</p>
-
-<span class="mt-2 block text-sm font-bold text-blue-700">
-فتح المحادثة ←
-</span>
-
-</a>
-
-{% else %}
-
-<div class="card p-6 text-center text-sm">
-ستظهر محادثتك هنا بعد شراء سلعة.
-</div>
-
-{% endfor %}
-
-</div>
-</section>
-{% if active_chat %}
-
-<section class="card mb-8 p-5">
-
-<div class="mb-3 flex justify-between gap-2">
-
-<div>
-<h2 class="font-black text-xl">
-{{active_chat.product_name}}
-</h2>
-
-<p class="text-xs text-slate-500">
-محادثة خاصة مع الإدارة
-</p>
-</div>
-
-<a href="/store" class="rounded-lg bg-slate-100 px-3 py-2 text-xs">
-إغلاق النافذة
-</a>
+            <button class="buy-btn" type="submit">
+                إرسال الرسالة
+            </button>
+        </form>
+        {% else %}
+        <p class="empty">المحادثة غير مفتوحة حالياً.</p>
+        {% endif %}
+    </div>
+    {% endif %}
 
 </div>
 
-<div class="mb-3 max-h-96 space-y-2 overflow-y-auto rounded-xl bg-slate-50 p-3">
-
-{% for m in chat_messages %}
-
-<div class="flex {% if m.sender_role=='customer' %}justify-start{% else %}justify-end{% endif %}">
-
-<div class="bubble max-w-[88%] rounded-xl p-3 text-sm {% if m.sender_role=='customer' %}bg-blue-600 text-white{% else %}bg-white{% endif %}">
-
-<small class="block opacity-70">
-{{'أنت' if m.sender_role=='customer' else 'إدارة تكنو زون'}} · {{m.created_at}}
-</small>
-
-{{m.message}}
-
-</div>
-</div>
-
-{% else %}
-
-<p class="p-6 text-center text-xs text-slate-400">
-ابدأ بإرسال رسالة.
-</p>
-
-{% endfor %}
-
-</div>
-
-{% if active_chat.status=='open' %}
-
-<form action="/chat/{{active_chat.id}}/send" method="post">
-
-<textarea
-class="field mb-2"
-name="message"
-rows="3"
-maxlength="5000"
-required
-placeholder="اكتب رسالتك أو بريدك الإلكتروني هنا">
-</textarea>
-
-<button class="btn w-full">
-إرسال الرسالة
-</button>
-
-</form>
-
-{% elif active_chat.status=='paused' %}
-
-<p class="rounded-xl bg-amber-50 p-3 text-center text-xs">
-المحادثة متوقفة مؤقتاً من الإدارة.
-</p>
-
-{% else %}
-
-<p class="rounded-xl bg-slate-100 p-3 text-center text-xs">
-المحادثة مغلقة من الإدارة.
-</p>
-
-{% endif %}
-
-</section>
-
-{% endif %}
-
-<footer class="border-t py-5 text-center text-xs text-slate-400">
-© تكنو زون · جميع الحقوق محفوظة
+<footer style="
+    background:#17243a;
+    text-align:center;
+    padding:20px;
+    color:#aab8c8;
+    margin-top:30px;
+">
+    Techno Zone © جميع الحقوق محفوظة
 </footer>
 
-</main>
 </body>
 </html>
