@@ -42,9 +42,15 @@ button:disabled{opacity:.6;cursor:wait}
 <div id="toast" role="status" aria-live="polite"></div>
 
 <header class="bg-white p-4 shadow">
-<div class="mx-auto flex max-w-6xl items-center justify-between">
+<div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
+
 <b class="text-xl">لوحة إدارة تكنو زون</b>
+
+<div class="flex gap-2">
 <a class="btn" href="/store">المتجر</a>
+<a class="rounded-xl bg-red-600 px-4 py-3 font-bold text-white" href="/logout">خروج</a>
+</div>
+
 </div>
 </header>
 
@@ -55,8 +61,11 @@ button:disabled{opacity:.6;cursor:wait}
 <p>إدارة السلع والأكواد والأرصدة ومحادثات العملاء.</p>
 </section>
 
+
 <!-- إضافة منتج -->
+
 <section class="panel">
+
 <h2 class="mb-4 text-xl font-black">إضافة سلعة جديدة</h2>
 
 <form action="/admin/add_product" method="post" enctype="multipart/form-data" class="grid gap-3">
@@ -83,17 +92,22 @@ button:disabled{opacity:.6;cursor:wait}
 </div>
 
 <button class="btn">إضافة السلعة</button>
+
 </form>
 </section>
 
+
 <!-- إضافة أكواد -->
+
 <section class="panel">
+
 <h2 class="mb-4 text-xl font-black">إضافة محتوى أو أكواد</h2>
 
 <form action="/admin/add_content" method="post" class="grid gap-3 sm:grid-cols-2">
 
 <select class="field" name="product_id" required>
 <option value="">اختر السلعة</option>
+
 {% for p in products %}
 {% if p.requires_content %}
 <option value="{{p.id}}" {% if selected_product and selected_product.id == p.id %}selected{% endif %}>
@@ -101,25 +115,32 @@ button:disabled{opacity:.6;cursor:wait}
 </option>
 {% endif %}
 {% endfor %}
+
 </select>
 
 <textarea class="field" name="secret_code" rows="2" placeholder="ضع كل كود في سطر مستقل" required></textarea>
 
 <button class="btn sm:col-span-2">إضافة المحتوى</button>
+
 </form>
 
 <p class="mt-2 text-xs text-slate-500">
 تظهر هنا السلع التي تم تحديد أنها تحتاج إلى أكواد أو محتوى فقط.
 </p>
+
 </section>
 
+
 <!-- المنتجات -->
+
 <section class="panel">
+
 <h2 class="mb-4 text-xl font-black">السلع الموجودة</h2>
 
 <div class="space-y-3">
 
 {% for p in products %}
+
 <div class="rounded-xl bg-slate-50 p-4">
 
 <div class="flex flex-wrap items-center justify-between gap-3">
@@ -130,14 +151,22 @@ button:disabled{opacity:.6;cursor:wait}
 <p class="text-xs text-slate-500">{{p.description or 'لا يوجد وصف'}}</p>
 </div>
 
-<form action="/admin/delete_product" method="post" data-confirm="هل أنت متأكد من حذف هذه السلعة؟">
+<form action="/admin/delete_product"
+method="post"
+data-confirm="هل أنت متأكد من حذف هذه السلعة؟">
+
 <input type="hidden" name="product_id" value="{{p.id}}">
-<button class="rounded-lg bg-red-100 px-3 py-2 text-red-700">حذف السلعة</button>
+
+<button type="submit" class="rounded-lg bg-red-100 px-3 py-2 text-red-700">
+حذف السلعة
+</button>
+
 </form>
 
 </div>
 
 <div class="mt-3 flex flex-wrap gap-2 text-xs">
+
 <span class="rounded-lg bg-white px-3 py-2">
 الأكواد: {{'مطلوبة' if p.requires_content else 'غير مطلوبة'}}
 </span>
@@ -151,29 +180,38 @@ button:disabled{opacity:.6;cursor:wait}
 </span>
 
 </div>
+
 </div>
 
 {% else %}
+
 <p>لا توجد سلع حالياً.</p>
+
 {% endfor %}
 
 </div>
 </section>
 
+
 <!-- المحادثات -->
+
 <section class="panel">
 
 <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+
 <h2 class="text-xl font-black">محادثات العملاء</h2>
 
 <a href="/admin?show_hidden=1" class="rounded-lg bg-slate-100 px-3 py-2 text-sm">
 عرض المحادثات المخفية
 </a>
+
 </div>
 
 <div class="grid gap-4 lg:grid-cols-2">
 
+
 <!-- قائمة المحادثات -->
+
 <div class="space-y-2">
 
 {% for c in conversations %}
@@ -182,11 +220,13 @@ button:disabled{opacity:.6;cursor:wait}
 class="block rounded-xl border p-3 hover:bg-blue-50">
 
 <div class="flex justify-between gap-2">
+
 <b>{{c.username}}</b>
 
 <small>
 {{'مفتوحة' if c.status=='open' else ('متوقفة' if c.status=='paused' else 'مغلقة')}}
 </small>
+
 </div>
 
 <p class="text-sm text-blue-700">{{c.product_name}}</p>
@@ -202,12 +242,16 @@ class="block rounded-xl border p-3 hover:bg-blue-50">
 </a>
 
 {% else %}
+
 <p class="text-sm text-slate-500">لا توجد محادثات.</p>
+
 {% endfor %}
 
 </div>
 
+
 <!-- تفاصيل المحادثة -->
+
 <div class="rounded-xl bg-slate-50 p-3">
 
 {% if active_chat %}
@@ -218,40 +262,49 @@ class="block rounded-xl border p-3 hover:bg-blue-50">
 
 <form action="/admin/chat/{{active_chat.id}}/status" method="post" class="flex flex-wrap gap-1">
 
-<button class="rounded-lg bg-green-600 px-3 py-2 text-xs text-white"
+<button type="submit"
+class="rounded-lg bg-green-600 px-3 py-2 text-xs text-white"
 name="status" value="open">فتح</button>
 
-<button class="rounded-lg bg-amber-500 px-3 py-2 text-xs text-white"
+<button type="submit"
+class="rounded-lg bg-amber-500 px-3 py-2 text-xs text-white"
 name="status" value="paused">إيقاف مؤقت</button>
 
-<button class="rounded-lg bg-slate-700 px-3 py-2 text-xs text-white"
+<button type="submit"
+class="rounded-lg bg-slate-700 px-3 py-2 text-xs text-white"
 name="status" value="closed">إغلاق</button>
 
 </form>
 
-<form action="/admin/chat/{{active_chat.id}}/hide" method="post"
+
+<form action="/admin/chat/{{active_chat.id}}/hide"
+method="post"
 data-confirm="هل تريد إخفاء هذه المحادثة؟">
 
-<button class="rounded-lg bg-red-100 px-3 py-2 text-xs text-red-700">
+<button type="submit" class="rounded-lg bg-red-100 px-3 py-2 text-xs text-red-700">
 إخفاء
 </button>
 
 </form>
 
+
 {% if active_chat.hidden %}
 
 <form action="/admin/chat/{{active_chat.id}}/unhide" method="post">
 
-<button class="rounded-lg bg-blue-100 px-3 py-2 text-xs text-blue-700">
+<button type="submit" class="rounded-lg bg-blue-100 px-3 py-2 text-xs text-blue-700">
 إظهار
 </button>
 
 </form>
 
 {% endif %}
+
 </div>
 
+
 <!-- الرسائل -->
+
 <div id="messages-box"
 class="mb-3 max-h-80 space-y-2 overflow-y-auto rounded-xl bg-white p-3">
 
@@ -272,10 +325,13 @@ class="mb-3 max-h-80 space-y-2 overflow-y-auto rounded-xl bg-white p-3">
 </div>
 
 {% else %}
+
 <p class="text-center text-xs text-slate-400">لا توجد رسائل.</p>
+
 {% endfor %}
 
 </div>
+
 
 {% if active_chat.status!='closed' %}
 
@@ -284,13 +340,16 @@ class="mb-3 max-h-80 space-y-2 overflow-y-auto rounded-xl bg-white p-3">
 <textarea class="field mb-2" rows="3" name="message"
 required placeholder="اكتب الرد أو رابط العميل"></textarea>
 
-<button class="btn w-full">إرسال الرسالة</button>
+<button type="submit" class="btn w-full">إرسال الرسالة</button>
 
 </form>
 
 {% else %}
+
 <p class="text-xs text-slate-500">المحادثة مغلقة؛ أعد فتحها للرد.</p>
+
 {% endif %}
+
 
 {% else %}
 
@@ -304,43 +363,87 @@ required placeholder="اكتب الرد أو رابط العميل"></textarea>
 </div>
 </section>
 
-<!-- شحن الرصيد -->
+
+<!-- شحن الرصيد وحذف الحساب -->
+
 <section class="panel">
 
-<h2 class="mb-4 text-xl font-black">شحن أرصدة المستخدمين</h2>
+<h2 class="mb-4 text-xl font-black">إدارة حسابات العملاء</h2>
+
+<p class="mb-4 text-sm text-slate-500">
+يمكنك شحن رصيد العميل أو حذف حسابه نهائياً.
+</p>
 
 <div class="space-y-3">
 
 {% for u in users %}
 
-<div class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-50 p-3">
+<div class="rounded-xl bg-slate-50 p-4">
 
-<div>
-<b>{{u.username}}</b>
+<div class="mb-3">
+
+<b class="text-lg">{{u.username}}</b>
+
 <p class="text-xs text-slate-500">
-#{{u.id}} · الرصيد {{u.balance}}$
+رقم العميل: #{{u.id}} · الرصيد الحالي: {{u.balance}}$
 </p>
+
 </div>
 
-<form action="/admin/add_balance" method="post" class="flex gap-2">
+
+<div class="flex flex-wrap items-center gap-2">
+
+
+<!-- شحن الرصيد -->
+
+<form action="/admin/add_balance"
+method="post"
+class="flex flex-wrap gap-2">
 
 <input type="hidden" name="user_id" value="{{u.id}}">
 
-<input class="field w-28" type="number" min="0.01"
-step="0.01" name="amount" placeholder="المبلغ" required>
+<input class="field w-28"
+type="number"
+min="0.01"
+step="0.01"
+name="amount"
+placeholder="المبلغ"
+required>
 
-<button class="btn">شحن</button>
+<button type="submit" class="btn">
+شحن الرصيد
+</button>
+
+</form>
+
+
+<!-- حذف حساب العميل -->
+
+<form action="/admin/delete_user"
+method="post"
+data-confirm="تحذير: سيتم حذف حساب العميل {{u.username}} ومحادثاته ورسائله ومشترياته نهائياً. هل أنت متأكد من المتابعة؟">
+
+<input type="hidden" name="user_id" value="{{u.id}}">
+
+<button type="submit"
+class="rounded-xl bg-red-600 px-4 py-3 font-bold text-white hover:bg-red-700">
+حذف الحساب
+</button>
 
 </form>
 
 </div>
+</div>
 
 {% else %}
-<p>لا يوجد مستخدمون.</p>
+
+<p>لا يوجد مستخدمون حالياً.</p>
+
 {% endfor %}
 
 </div>
 </section>
+
 
 <footer class="py-5 text-center text-xs text-slate-400">
 © Techno Zone
@@ -348,14 +451,17 @@ step="0.01" name="amount" placeholder="المبلغ" required>
 
 </main>
 
+
 <script>
+
 /* =====================================
-   إشعارات AJAX
+   إشعارات داخل الصفحة
 ===================================== */
 
 let toastTimer;
 
 function showToast(message, success=true){
+
     const toast = document.getElementById("toast");
 
     toast.textContent = message;
@@ -365,26 +471,32 @@ function showToast(message, success=true){
 
     toastTimer = setTimeout(()=>{
         toast.classList.remove("show");
-    },3000);
+    },3500);
+
 }
 
 
 /* =====================================
-   تحديث اللوحة دون إعادة تحميل الصفحة
+   تحديث لوحة الإدارة
 ===================================== */
 
 async function refreshAdminPage(url){
 
     const oldMain = document.getElementById("admin-main");
+
     const scrollPosition = window.scrollY;
 
     const response = await fetch(url || window.location.href,{
+
         method:"GET",
+
         headers:{
             "Accept":"text/html",
             "X-Requested-With":"XMLHttpRequest"
         },
+
         cache:"no-store"
+
     });
 
     if(!response.ok){
@@ -394,6 +506,7 @@ async function refreshAdminPage(url){
     const html = await response.text();
 
     const parser = new DOMParser();
+
     const newDocument = parser.parseFromString(html,"text/html");
 
     const newMain = newDocument.getElementById("admin-main");
@@ -410,11 +523,14 @@ async function refreshAdminPage(url){
         top:scrollPosition,
         behavior:"instant"
     });
+
+    scrollMessagesToBottom();
+
 }
 
 
 /* =====================================
-   إرسال جميع النماذج باستخدام AJAX
+   إرسال النماذج دون إعادة تحميل الصفحة
 ===================================== */
 
 document.addEventListener("submit", async function(event){
@@ -428,9 +544,13 @@ document.addEventListener("submit", async function(event){
     event.preventDefault();
 
     if(form.dataset.confirm){
-        if(!confirm(form.dataset.confirm)){
+
+        const confirmed = confirm(form.dataset.confirm);
+
+        if(!confirmed){
             return;
         }
+
     }
 
     const submitButton = event.submitter || form.querySelector(
@@ -440,20 +560,24 @@ document.addEventListener("submit", async function(event){
     const originalText = submitButton ? submitButton.textContent : "";
 
     if(submitButton){
+
         submitButton.disabled = true;
+
         submitButton.textContent = "جارٍ التنفيذ...";
+
     }
 
     try{
 
         const formData = new FormData(form);
 
-        // تضمين قيمة الزر الذي تم الضغط عليه
         if(event.submitter && event.submitter.name){
+
             formData.append(
                 event.submitter.name,
                 event.submitter.value
             );
+
         }
 
         const response = await fetch(form.action || window.location.href,{
@@ -472,17 +596,24 @@ document.addEventListener("submit", async function(event){
         let result;
 
         try{
+
             result = await response.json();
+
         }catch{
+
             throw new Error("استجابة غير مفهومة من الخادم");
+
         }
 
         if(!response.ok || !result.ok){
+
             showToast(
                 result.message || "تعذر تنفيذ العملية",
                 false
             );
+
             return;
+
         }
 
         showToast(
@@ -490,10 +621,8 @@ document.addEventListener("submit", async function(event){
             true
         );
 
-        // تحديث الرابط عند وجود رابط جديد في الاستجابة
         const destination = result.redirect || window.location.href;
 
-        // تحديث اللوحة مع الحفاظ على موضع التمرير
         await refreshAdminPage(destination);
 
     }catch(error){
@@ -507,10 +636,12 @@ document.addEventListener("submit", async function(event){
 
     }finally{
 
-        // قد يكون النموذج قد استبدل أثناء التحديث
         if(submitButton && submitButton.isConnected){
+
             submitButton.disabled = false;
+
             submitButton.textContent = originalText;
+
         }
 
     }
@@ -519,7 +650,7 @@ document.addEventListener("submit", async function(event){
 
 
 /* =====================================
-   منع إرسال النموذج أكثر من مرة
+   منع النقر المتكرر
 ===================================== */
 
 document.addEventListener("click",function(event){
@@ -538,7 +669,7 @@ document.addEventListener("click",function(event){
 
 
 /* =====================================
-   التمرير لآخر الرسائل عند فتح المحادثة
+   التمرير لآخر الرسائل
 ===================================== */
 
 function scrollMessagesToBottom(){
@@ -546,7 +677,9 @@ function scrollMessagesToBottom(){
     const box = document.getElementById("messages-box");
 
     if(box){
+
         box.scrollTop = box.scrollHeight;
+
     }
 
 }
