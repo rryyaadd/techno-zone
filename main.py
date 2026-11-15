@@ -1413,7 +1413,7 @@ async def add_product(
 
 
 # ==========================================
-# إضافة محتوى للمنتج - كل حساب في سجل مستقل
+# إضافة حسابات بصيغة الحساب وكلمة السر
 # ==========================================
 
 @app.post("/admin/add_content")
@@ -1433,9 +1433,49 @@ def add_content(
         if line.strip()
     ]
 
-    if not lines:
+    if not lines or len(lines) % 2 != 0:
         return action_response(
-            request, "المحتوى فارغ", "/admin", False
+            request,
+            "تأكد من إدخال الحساب وكلمة السر لكل حساب",
+            "/admin",
+            False
+        )
+
+    accounts = []
+
+    for i in range(0, len(lines), 2):
+        email_line = lines[i]
+        password_line = lines[i + 1]
+
+        if not email_line.startswith("الحساب"):
+            return action_response(
+                request,
+                "السطر الأول يجب أن يبدأ بكلمة الحساب",
+                "/admin",
+                False
+            )
+
+        if not password_line.startswith("كلمة السر"):
+            return action_response(
+                request,
+                "السطر الثاني يجب أن يبدأ بكلمة السر",
+                "/admin",
+                False
+            )
+
+        email = email_line.split(":", 1)[-1].strip()
+        password = password_line.split(":", 1)[-1].strip()
+
+        if not email or not password:
+            return action_response(
+                request,
+                "الحساب أو كلمة السر فارغة",
+                "/admin",
+                False
+            )
+
+        accounts.append(
+            f"الحساب : {email}\nكلمة السر : {password}"
         )
 
     db = get_db()
@@ -1456,7 +1496,7 @@ def add_content(
                 False
             )
 
-        for line in lines:
+        for account in accounts:
             db.execute("""
                 INSERT INTO items(
                     name,
@@ -1468,7 +1508,7 @@ def add_content(
                 VALUES(?,?,?,0,?)
             """, (
                 product["name"],
-                line,
+                account,
                 product["price"],
                 product_id
             ))
@@ -1478,7 +1518,7 @@ def add_content(
 
         return action_response(
             request,
-            f"تمت إضافة {len(lines)} حساب بنجاح",
+            f"تمت إضافة {len(accounts)} حساب بنجاح",
             "/admin"
         )
 
@@ -1492,10 +1532,10 @@ def add_content(
 
         return action_response(
             request,
-            "حدث خطأ أثناء إضافة المحتوى",
+            "حدث خطأ أثناء إضافة الحسابات",
             "/admin",
             False
-    )
+)
 
 
 # ==========================================
