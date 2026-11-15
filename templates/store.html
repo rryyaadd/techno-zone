@@ -129,6 +129,19 @@ button {cursor:pointer}
     flex-wrap:wrap;
 }
 
+/* اسم المستخدم */
+
+.user-name {
+    background:var(--panel2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:10px 14px;
+    border-radius:12px;
+    font-size:13px;
+    font-weight:bold;
+    white-space:nowrap;
+}
+
 .balance {
     background:var(--panel);
     border:1px solid var(--border);
@@ -761,6 +774,11 @@ footer strong {color:var(--primary)}
 
     .nav-actions {gap:6px}
 
+    .user-name {
+        padding:8px 10px;
+        font-size:11px;
+    }
+
     .balance {
         padding:8px 10px;
         font-size:11px;
@@ -832,6 +850,11 @@ footer strong {color:var(--primary)}
         </div>
 
         <div class="nav-actions">
+
+            <!-- اسم المستخدم -->
+            <div class="user-name">
+                👤 {{ user.username }}
+            </div>
 
             <div class="balance">
                 رصيدك: {{ user.balance or 0 }}
@@ -1443,13 +1466,6 @@ document.querySelectorAll("form").forEach(form => {
 
     form.addEventListener("submit", async event => {
         event.preventDefault();
-
-        // تأكيد إخفاء المشتريات داخل تصميم المتجر
-        if (form.classList.contains("hide-purchase-form")) {
-            const approved = window.confirm
-                ? true
-                : true;
-        }
 
         await sendStoreForm(form);
     });
