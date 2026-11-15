@@ -1413,7 +1413,7 @@ async def add_product(
 
 
 # ==========================================
-# إضافة محتوى للمنتج - كل 3 أسطر في سجل واحد
+# إضافة محتوى للمنتج - كل حساب في سجل مستقل
 # ==========================================
 
 @app.post("/admin/add_content")
@@ -1424,13 +1424,9 @@ def add_content(
 ):
     if not is_admin(request):
         return action_response(
-            request,
-            "غير مصرح",
-            "/login",
-            False
+            request, "غير مصرح", "/login", False
         )
 
-    # تقسيم المحتوى إلى أسطر وإهمال الأسطر الفارغة
     lines = [
         line.strip()
         for line in secret_code.splitlines()
@@ -1439,10 +1435,7 @@ def add_content(
 
     if not lines:
         return action_response(
-            request,
-            "المحتوى فارغ",
-            "/admin",
-            False
+            request, "المحتوى فارغ", "/admin", False
         )
 
     db = get_db()
@@ -1456,7 +1449,6 @@ def add_content(
 
         if not product or not product["requires_content"]:
             db.close()
-
             return action_response(
                 request,
                 "المنتج غير موجود أو لا يقبل المحتوى",
@@ -1464,10 +1456,7 @@ def add_content(
                 False
             )
 
-        # تجميع كل ثلاثة أسطر في محتوى واحد
-        for i in range(0, len(lines), 3):
-            content = "\n".join(lines[i:i + 3])
-
+        for line in lines:
             db.execute("""
                 INSERT INTO items(
                     name,
@@ -1479,7 +1468,7 @@ def add_content(
                 VALUES(?,?,?,0,?)
             """, (
                 product["name"],
-                content,
+                line,
                 product["price"],
                 product_id
             ))
@@ -1489,7 +1478,7 @@ def add_content(
 
         return action_response(
             request,
-            "تمت إضافة المحتوى بنجاح",
+            f"تمت إضافة {len(lines)} حساب بنجاح",
             "/admin"
         )
 
@@ -1506,7 +1495,7 @@ def add_content(
             "حدث خطأ أثناء إضافة المحتوى",
             "/admin",
             False
-        )
+    )
 
 
 # ==========================================
