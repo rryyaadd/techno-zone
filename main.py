@@ -1413,7 +1413,7 @@ async def add_product(
 
 
 # ==========================================
-# إضافة محتوى للمنتج
+# إضافة محتوى للمنتج - كل 3 أسطر في سجل واحد
 # ==========================================
 
 @app.post("/admin/add_content")
@@ -1430,10 +1430,14 @@ def add_content(
             False
         )
 
-    # الاحتفاظ بجميع الأسطر داخل محتوى واحد
-    content = secret_code.strip()
+    # تقسيم المحتوى إلى أسطر وإهمال الأسطر الفارغة
+    lines = [
+        line.strip()
+        for line in secret_code.splitlines()
+        if line.strip()
+    ]
 
-    if not content:
+    if not lines:
         return action_response(
             request,
             "المحتوى فارغ",
@@ -1443,47 +1447,66 @@ def add_content(
 
     db = get_db()
 
-    product = db.execute("""
-        SELECT *
-        FROM products
-        WHERE id=?
-    """, (product_id,)).fetchone()
+    try:
+        product = db.execute("""
+            SELECT *
+            FROM products
+            WHERE id=?
+        """, (product_id,)).fetchone()
 
-    if not product or not product["requires_content"]:
+        if not product or not product["requires_content"]:
+            db.close()
+
+            return action_response(
+                request,
+                "المنتج غير موجود أو لا يقبل المحتوى",
+                "/admin",
+                False
+            )
+
+        # تجميع كل ثلاثة أسطر في محتوى واحد
+        for i in range(0, len(lines), 3):
+            content = "\n".join(lines[i:i + 3])
+
+            db.execute("""
+                INSERT INTO items(
+                    name,
+                    secret_code,
+                    price,
+                    is_sold,
+                    product_id
+                )
+                VALUES(?,?,?,0,?)
+            """, (
+                product["name"],
+                content,
+                product["price"],
+                product_id
+            ))
+
+        db.commit()
         db.close()
 
         return action_response(
             request,
-            "المنتج غير موجود أو لا يقبل المحتوى",
+            "تمت إضافة المحتوى بنجاح",
+            "/admin"
+        )
+
+    except Exception as error:
+        print("Add content error:", error)
+
+        try:
+            db.close()
+        except Exception:
+            pass
+
+        return action_response(
+            request,
+            "حدث خطأ أثناء إضافة المحتوى",
             "/admin",
             False
         )
-
-    # حفظ المحتوى كاملاً في سجل واحد
-    db.execute("""
-        INSERT INTO items(
-            name,
-            secret_code,
-            price,
-            is_sold,
-            product_id
-        )
-        VALUES(?,?,?,0,?)
-    """, (
-        product["name"],
-        content,
-        product["price"],
-        product_id
-    ))
-
-    db.commit()
-    db.close()
-
-    return action_response(
-        request,
-        "تمت إضافة المحتوى بنجاح",
-        "/admin"
-    )
 
 
 # ==========================================
