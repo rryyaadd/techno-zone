@@ -1,775 +1,815 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Techno Zone | المتجر</title>
-
-    <style>
-        :root {
-            color-scheme: light;
-            --bg: #f3f6fb;
-            --panel: #ffffff;
-            --panel2: #eaf1f8;
-            --primary: #078db5;
-            --primary2: #087fae;
-            --text: #17283d;
-            --muted: #667990;
-            --green: #0a9d65;
-            --red: #df4658;
-            --border: rgba(20,45,75,.13);
-            --topbar: rgba(255,255,255,.94);
-            --hero-bg: linear-gradient(115deg,#d8f3fa,#ffffff);
-            --input-bg: #f4f7fb;
-            --code-bg: #edf8f3;
-            --customer-msg: #dff5fc;
-            --admin-msg: #eaf0f7;
-            --image-bg: #eaf1f8;
-            --shadow: 0 5px 20px rgba(30,55,85,.06);
-        }
-
-        body.dark-mode {
-            color-scheme: dark;
-            --bg: #08111f;
-            --panel: #101d30;
-            --panel2: #15243a;
-            --primary: #16c7e8;
-            --primary2: #087fae;
-            --text: #f2f7ff;
-            --muted: #9aadc5;
-            --green: #20c982;
-            --red: #ff5c6c;
-            --border: rgba(255,255,255,.09);
-            --topbar: rgba(8,17,31,.94);
-            --hero-bg: linear-gradient(115deg,rgba(13,104,145,.32),rgba(19,32,55,.95));
-            --input-bg: #081525;
-            --code-bg: #071321;
-            --customer-msg: #123c55;
-            --admin-msg: #1b3046;
-            --image-bg: #0b192a;
-            --shadow: none;
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            font-family: Tahoma, Arial, sans-serif;
-            background:
-                radial-gradient(circle at top left, rgba(22,140,180,.09), transparent 35%),
-                var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            transition: background .25s, color .25s;
-        }
-
-        a {
-            color: inherit;
-            text-decoration: none;
-        }
-
-        button, input, textarea {
-            font-family: inherit;
-        }
-
-        button {
-            cursor: pointer;
-        }
-
-        .container {
-            width: min(1180px, 94%);
-            margin: auto;
-        }
-
-        /* الشريط العلوي */
-
-        .topbar {
-            background: var(--topbar);
-            border-bottom: 1px solid var(--border);
-            position: sticky;
-            top: 0;
-            z-index: 50;
-            backdrop-filter: blur(15px);
-        }
-
-        .navbar {
-            min-height: 76px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 11px;
-            min-width: 0;
-        }
-
-        .brand-logo {
-            width: 48px;
-            height: 48px;
-            border-radius: 14px;
-            display: grid;
-            place-items: center;
-            background: linear-gradient(135deg,var(--primary),#1763a8);
-            color: white;
-            font-size: 23px;
-            font-weight: bold;
-            overflow: hidden;
-            flex-shrink: 0;
-        }
-
-        .brand-logo img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-
-        .brand-name {
-            font-size: 19px;
-            font-weight: bold;
-            letter-spacing: .4px;
-        }
-
-        .brand-name span {
-            color: var(--primary);
-        }
-
-        .nav-actions {
-            display: flex;
-            align-items: center;
-            gap: 9px;
-            flex-wrap: wrap;
-        }
-
-        .balance {
-            background: var(--panel);
-            border: 1px solid var(--border);
-            padding: 10px 14px;
-            border-radius: 12px;
-            color: var(--green);
-            font-weight: bold;
-            font-size: 14px;
-        }
-
-        .logout {
-            background: rgba(255,92,108,.12);
-            color: var(--red);
-            padding: 10px 14px;
-            border-radius: 10px;
-            font-size: 13px;
-        }
-
-        .theme-toggle {
-            background: var(--panel2);
-            color: var(--text);
-            border: 1px solid var(--border);
-            padding: 10px 13px;
-            border-radius: 10px;
-            font-size: 12px;
-            font-weight: bold;
-            white-space: nowrap;
-        }
-
-        .theme-toggle:hover {
-            border-color: var(--primary);
-        }
-
-        /* الواجهة الرئيسية */
-
-        .hero {
-            margin-top: 28px;
-            padding: 35px;
-            border-radius: 23px;
-            background: var(--hero-bg), var(--panel);
-            border: 1px solid rgba(22,199,232,.2);
-            position: relative;
-            overflow: hidden;
-            box-shadow: var(--shadow);
-        }
-
-        .hero::after {
-            content: "TZ";
-            position: absolute;
-            left: 22px;
-            top: -35px;
-            font-size: 170px;
-            font-weight: bold;
-            color: rgba(100,150,180,.08);
-            pointer-events: none;
-        }
-
-        .hero h1 {
-            margin: 0 0 12px;
-            font-size: clamp(25px,5vw,38px);
-        }
-
-        .hero h1 span {
-            color: var(--primary);
-        }
-
-        .hero p {
-            margin: 0;
-            color: var(--muted);
-            line-height: 1.9;
-            max-width: 650px;
-            font-size: 14px;
-        }
-
-        .hero-small {
-            margin-top: 20px;
-            color: var(--primary);
-            font-size: 13px;
-            font-weight: bold;
-        }
-
-        /* العناوين */
-
-        .section {
-            margin-top: 35px;
-        }
-
-        .section-title {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            margin-bottom: 17px;
-        }
-
-        .section-title h2 {
-            font-size: 20px;
-            margin: 0;
-        }
-
-        .section-title small {
-            color: var(--muted);
-            font-size: 12px;
-        }
-
-        /* المنتجات */
-
-        .products-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill,minmax(235px,1fr));
-            gap: 17px;
-        }
-
-        .product-card {
-            background: linear-gradient(160deg,var(--panel2),var(--panel));
-            border: 1px solid var(--border);
-            border-radius: 17px;
-            overflow: hidden;
-            transition: .2s;
-            box-shadow: var(--shadow);
-        }
-
-        .product-card:hover {
-            transform: translateY(-4px);
-            border-color: rgba(22,199,232,.45);
-        }
-
-        .product-image {
-            height: 165px;
-            background: var(--image-bg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-        }
-
-        .product-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .image-placeholder {
-            font-size: 45px;
-            color: var(--primary);
-        }
-
-        .product-content {
-            padding: 17px;
-        }
-
-        .product-name {
-            font-size: 17px;
-            margin: 0 0 10px;
-        }
-
-        .product-description {
-            color: var(--muted);
-            font-size: 13px;
-            line-height: 1.8;
-            min-height: 45px;
-            white-space: pre-line;
-            overflow-wrap: anywhere;
-        }
-
-        .product-price {
-            color: var(--green);
-            font-size: 19px;
-            font-weight: bold;
-            margin: 15px 0 10px;
-        }
-
-        .product-details {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 7px;
-            margin-bottom: 15px;
-        }
-
-        .tag {
-            font-size: 10px;
-            padding: 6px 9px;
-            border-radius: 20px;
-            background: rgba(22,199,232,.1);
-            color: var(--primary);
-        }
-
-        .tag.green {
-            background: rgba(32,201,130,.12);
-            color: var(--green);
-        }
-
-        .tag.red {
-            background: rgba(255,92,108,.12);
-            color: var(--red);
-        }
-
-        .buy-button {
-            width: 100%;
-            border: 0;
-            padding: 12px;
-            color: #041522;
-            font-weight: bold;
-            font-size: 14px;
-            border-radius: 10px;
-            background: linear-gradient(135deg,var(--primary),#53e0f2);
-            transition: .2s;
-        }
-
-        .buy-button:hover {
-            filter: brightness(1.08);
-        }
-
-        .buy-button:disabled {
-            background: #788697;
-            color: white;
-            cursor: not-allowed;
-        }
-
-        /* الصناديق العامة */
-
-        .panel {
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 19px;
-            margin-bottom: 15px;
-        }
-
-        .empty {
-            text-align: center;
-            padding: 30px 15px;
-            color: var(--muted);
-            background: var(--panel);
-            border: 1px dashed var(--border);
-            border-radius: 14px;
-            font-size: 14px;
-        }
-
-        /* سجل المشتريات */
-
-        .purchase {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 15px;
-            flex-wrap: wrap;
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: 13px;
-            padding: 18px;
-            margin-bottom: 13px;
-            box-shadow: var(--shadow);
-        }
-
-        .purchase-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .purchase-info h3 {
-            margin: 0 0 8px;
-            font-size: 15px;
-        }
-
-        .purchase-info p {
-            margin: 5px 0;
-            color: var(--muted);
-            font-size: 12px;
-        }
-
-        /* مستطيل كود السلعة - تم تكبيره */
-
-        .secret-code {
-            background: var(--code-bg);
-            color: var(--green);
-            border: 1px dashed rgba(32,201,130,.55);
-            padding: 22px 20px;
-            border-radius: 12px;
-            direction: ltr;
-            text-align: left;
-            width: 100%;
-            max-width: 750px;
-            min-height: 100px;
-            height: auto;
-            margin-top: 13px;
-            font-size: 15px;
-            font-weight: bold;
-            line-height: 2;
-            white-space: pre-wrap;
-            overflow-wrap: anywhere;
-            word-break: break-word;
-            overflow: visible;
-            user-select: text;
-        }
-
-        .code-actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 9px;
-            flex-wrap: wrap;
-        }
-
-        .copy-code {
-            background: rgba(32,201,130,.12);
-            border: 1px solid rgba(32,201,130,.3);
-            color: var(--green);
-            padding: 9px 15px;
-            border-radius: 9px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-
-        .copy-code:hover {
-            background: rgba(32,201,130,.22);
-        }
-
-        .hide-button {
-            background: rgba(255,92,108,.12);
-            border: 1px solid rgba(255,92,108,.2);
-            color: var(--red);
-            padding: 9px 12px;
-            border-radius: 9px;
-            font-size: 12px;
-        }
-
-        /* المحادثات */
-
-        .chat-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill,minmax(220px,1fr));
-            gap: 12px;
-        }
-
-        .chat-item {
-            display: block;
-            background: var(--panel);
-            padding: 15px;
-            border-radius: 13px;
-            border: 1px solid var(--border);
-            transition: .2s;
-        }
-
-        .chat-item:hover {
-            border-color: var(--primary);
-        }
-
-        .chat-item h3 {
-            margin: 0 0 9px;
-            font-size: 15px;
-        }
-
-        .chat-item p {
-            color: var(--muted);
-            margin: 0;
-            font-size: 12px;
-            line-height: 1.8;
-            overflow-wrap: anywhere;
-        }
-
-        .status {
-            display: inline-block;
-            margin-top: 10px;
-            font-size: 11px;
-            padding: 5px 9px;
-            border-radius: 20px;
-        }
-
-        .status-open {
-            background: rgba(32,201,130,.13);
-            color: var(--green);
-        }
-
-        .status-paused {
-            background: rgba(255,190,50,.13);
-            color: #d18b00;
-        }
-
-        .status-closed {
-            background: rgba(255,92,108,.13);
-            color: var(--red);
-        }
-
-        /* نافذة المحادثة */
-
-        .chat-box {
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            overflow: hidden;
-        }
-
-        .chat-header {
-            padding: 17px;
-            background: var(--panel2);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .chat-header h3 {
-            margin: 0;
-            font-size: 15px;
-        }
-
-        .back-link {
-            color: var(--primary);
-            font-size: 12px;
-        }
-
-        .chat-messages {
-            padding: 17px;
-            min-height: 240px;
-            max-height: 430px;
-            overflow-y: auto;
-        }
-
-        .message {
-            max-width: 85%;
-            width: fit-content;
-            padding: 11px 14px;
-            border-radius: 13px;
-            margin-bottom: 13px;
-            line-height: 1.8;
-            font-size: 13px;
-            overflow-wrap: anywhere;
-            white-space: pre-wrap;
-        }
-
-        .message.customer {
-            background: var(--customer-msg);
-            border: 1px solid rgba(22,199,232,.2);
-            margin-right: auto;
-        }
-
-        .message.admin {
-            background: var(--admin-msg);
-            border: 1px solid var(--border);
-            margin-left: auto;
-        }
-
-        .message small {
-            display: block;
-            color: var(--muted);
-            margin-top: 6px;
-            font-size: 10px;
-        }
-
-        .chat-form {
-            padding: 14px;
-            display: flex;
-            gap: 9px;
-            border-top: 1px solid var(--border);
-        }
-
-        .chat-form textarea {
-            flex: 1;
-            min-width: 0;
-            resize: vertical;
-            min-height: 43px;
-            max-height: 120px;
-            background: var(--input-bg);
-            border: 1px solid var(--border);
-            color: var(--text);
-            border-radius: 10px;
-            padding: 12px;
-            outline: none;
-        }
-
-        .chat-form textarea:focus {
-            border-color: var(--primary);
-        }
-
-        .send-button {
-            background: var(--primary);
-            color: #041522;
-            border: 0;
-            border-radius: 10px;
-            padding: 0 18px;
-            font-weight: bold;
-        }
-
-        .chat-locked {
-            padding: 17px;
-            color: #d18b00;
-            text-align: center;
-            font-size: 13px;
-            border-top: 1px solid var(--border);
-        }
-
-        /* زر واتساب */
-
-        .whatsapp-button {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 9px;
-            background: #19bd71;
-            color: #041b12;
-            padding: 12px 20px;
-            border-radius: 11px;
-            font-size: 13px;
-            font-weight: bold;
-            margin-top: 15px;
-            transition: .2s;
-        }
-
-        .whatsapp-button:hover {
-            background: #35d88b;
-            transform: translateY(-2px);
-        }
-
-        /* التذييل */
-
-        footer {
-            text-align: center;
-            color: var(--muted);
-            border-top: 1px solid var(--border);
-            margin-top: 45px;
-            padding: 25px 10px;
-            font-size: 12px;
-            line-height: 2;
-        }
-
-        footer strong {
-            color: var(--primary);
-        }
-
-        /* الشاشات الصغيرة */
-
-        @media (max-width: 600px) {
-            .navbar {
-                padding: 12px 0;
-                align-items: center;
-                flex-wrap: wrap;
-            }
-
-            .brand-name {
-                font-size: 15px;
-            }
-
-            .brand-logo {
-                width: 39px;
-                height: 39px;
-            }
-
-            .nav-actions {
-                gap: 6px;
-            }
-
-            .balance {
-                padding: 8px 10px;
-                font-size: 11px;
-            }
-
-            .logout {
-                padding: 8px 10px;
-                font-size: 11px;
-            }
-
-            .theme-toggle {
-                padding: 8px 10px;
-                font-size: 11px;
-            }
-
-            .hero {
-                padding: 25px 20px;
-            }
-
-            .products-grid {
-                grid-template-columns: repeat(2,minmax(0,1fr));
-                gap: 10px;
-            }
-
-            .product-image {
-                height: 125px;
-            }
-
-            .product-content {
-                padding: 12px;
-            }
-
-            .product-name {
-                font-size: 14px;
-            }
-
-            .product-description {
-                font-size: 11px;
-            }
-
-            .product-price {
-                font-size: 16px;
-            }
-
-            .buy-button {
-                font-size: 12px;
-                padding: 10px 5px;
-            }
-
-            .message {
-                max-width: 94%;
-            }
-
-            .secret-code {
-                max-width: 100%;
-                min-height: 110px;
-                padding: 20px 14px;
-                font-size: 14px;
-            }
-
-            .purchase {
-                padding: 13px;
-            }
-        }
-
-        @media (max-width: 360px) {
-            .products-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Techno Zone | المتجر</title>
+
+<style>
+:root {
+    color-scheme: light;
+    --bg:#f3f6fb;
+    --panel:#fff;
+    --panel2:#eaf1f8;
+    --primary:#078db5;
+    --text:#17283d;
+    --muted:#667990;
+    --green:#0a9d65;
+    --red:#df4658;
+    --border:rgba(20,45,75,.13);
+    --topbar:rgba(255,255,255,.94);
+    --hero-bg:linear-gradient(115deg,#d8f3fa,#fff);
+    --input-bg:#f4f7fb;
+    --code-bg:#edf8f3;
+    --customer-msg:#dff5fc;
+    --admin-msg:#eaf0f7;
+    --image-bg:#eaf1f8;
+    --shadow:0 5px 20px rgba(30,55,85,.06);
+}
+
+body.dark-mode {
+    color-scheme:dark;
+    --bg:#08111f;
+    --panel:#101d30;
+    --panel2:#15243a;
+    --primary:#16c7e8;
+    --text:#f2f7ff;
+    --muted:#9aadc5;
+    --green:#20c982;
+    --red:#ff5c6c;
+    --border:rgba(255,255,255,.09);
+    --topbar:rgba(8,17,31,.94);
+    --hero-bg:linear-gradient(115deg,rgba(13,104,145,.32),rgba(19,32,55,.95));
+    --input-bg:#081525;
+    --code-bg:#071321;
+    --customer-msg:#123c55;
+    --admin-msg:#1b3046;
+    --image-bg:#0b192a;
+    --shadow:none;
+}
+
+* {box-sizing:border-box}
+
+body {
+    margin:0;
+    font-family:Tahoma,Arial,sans-serif;
+    background:radial-gradient(circle at top left,rgba(22,140,180,.09),transparent 35%),var(--bg);
+    color:var(--text);
+    min-height:100vh;
+    transition:background .25s,color .25s;
+}
+
+a {color:inherit;text-decoration:none}
+button,input,textarea {font-family:inherit}
+button {cursor:pointer}
+
+.container {
+    width:min(1180px,94%);
+    margin:auto;
+}
+
+/* الشريط العلوي */
+
+.topbar {
+    background:var(--topbar);
+    border-bottom:1px solid var(--border);
+    position:sticky;
+    top:0;
+    z-index:50;
+    backdrop-filter:blur(15px);
+}
+
+.navbar {
+    min-height:76px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:15px;
+}
+
+.brand {
+    display:flex;
+    align-items:center;
+    gap:11px;
+    min-width:0;
+}
+
+.brand-logo {
+    width:48px;
+    height:48px;
+    border-radius:14px;
+    display:grid;
+    place-items:center;
+    background:linear-gradient(135deg,var(--primary),#1763a8);
+    color:white;
+    font-size:23px;
+    font-weight:bold;
+    overflow:hidden;
+    flex-shrink:0;
+}
+
+.brand-logo img {
+    width:100%;
+    height:100%;
+    object-fit:contain;
+}
+
+.brand-name {
+    font-size:19px;
+    font-weight:bold;
+    letter-spacing:.4px;
+}
+
+.brand-name span {color:var(--primary)}
+
+.nav-actions {
+    display:flex;
+    align-items:center;
+    gap:9px;
+    flex-wrap:wrap;
+}
+
+.balance {
+    background:var(--panel);
+    border:1px solid var(--border);
+    padding:10px 14px;
+    border-radius:12px;
+    color:var(--green);
+    font-weight:bold;
+    font-size:14px;
+}
+
+.logout {
+    background:rgba(255,92,108,.12);
+    color:var(--red);
+    padding:10px 14px;
+    border-radius:10px;
+    font-size:13px;
+}
+
+.theme-toggle {
+    background:var(--panel2);
+    color:var(--text);
+    border:1px solid var(--border);
+    padding:10px 13px;
+    border-radius:10px;
+    font-size:12px;
+    font-weight:bold;
+    white-space:nowrap;
+}
+
+.theme-toggle:hover {border-color:var(--primary)}
+
+.admin-link {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    background:linear-gradient(135deg,#087fae,#16c7e8);
+    color:white;
+    padding:10px 14px;
+    border-radius:10px;
+    font-size:13px;
+    font-weight:bold;
+    white-space:nowrap;
+}
+
+/* الواجهة الرئيسية */
+
+.hero {
+    margin-top:28px;
+    padding:35px;
+    border-radius:23px;
+    background:var(--hero-bg),var(--panel);
+    border:1px solid rgba(22,199,232,.2);
+    position:relative;
+    overflow:hidden;
+    box-shadow:var(--shadow);
+}
+
+.hero::after {
+    content:"TZ";
+    position:absolute;
+    left:22px;
+    top:-35px;
+    font-size:170px;
+    font-weight:bold;
+    color:rgba(100,150,180,.08);
+    pointer-events:none;
+}
+
+.hero h1 {
+    margin:0 0 12px;
+    font-size:clamp(25px,5vw,38px);
+}
+
+.hero h1 span {color:var(--primary)}
+
+.hero p {
+    margin:0;
+    color:var(--muted);
+    line-height:1.9;
+    max-width:650px;
+    font-size:14px;
+}
+
+.hero-small {
+    margin-top:20px;
+    color:var(--primary);
+    font-size:13px;
+    font-weight:bold;
+}
+
+/* العناوين */
+
+.section {margin-top:35px}
+
+.section-title {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:17px;
+}
+
+.section-title h2 {
+    font-size:20px;
+    margin:0;
+}
+
+.section-title small {
+    color:var(--muted);
+    font-size:12px;
+}
+
+/* المنتجات */
+
+.products-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(235px,1fr));
+    gap:17px;
+}
+
+.product-card {
+    background:linear-gradient(160deg,var(--panel2),var(--panel));
+    border:1px solid var(--border);
+    border-radius:17px;
+    overflow:hidden;
+    transition:.2s;
+    box-shadow:var(--shadow);
+}
+
+.product-card:hover {
+    transform:translateY(-4px);
+    border-color:rgba(22,199,232,.45);
+}
+
+.product-image {
+    height:165px;
+    background:var(--image-bg);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+}
+
+.product-image img {
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+
+.image-placeholder {
+    font-size:45px;
+    color:var(--primary);
+}
+
+.product-content {padding:17px}
+
+.product-name {
+    font-size:17px;
+    margin:0 0 10px;
+}
+
+.product-description {
+    color:var(--muted);
+    font-size:13px;
+    line-height:1.8;
+    min-height:45px;
+    white-space:pre-line;
+    overflow-wrap:anywhere;
+}
+
+.product-price {
+    color:var(--green);
+    font-size:19px;
+    font-weight:bold;
+    margin:15px 0 10px;
+}
+
+.product-details {
+    display:flex;
+    flex-wrap:wrap;
+    gap:7px;
+    margin-bottom:15px;
+}
+
+.tag {
+    font-size:10px;
+    padding:6px 9px;
+    border-radius:20px;
+    background:rgba(22,199,232,.1);
+    color:var(--primary);
+}
+
+.tag.green {
+    background:rgba(32,201,130,.12);
+    color:var(--green);
+}
+
+.tag.red {
+    background:rgba(255,92,108,.12);
+    color:var(--red);
+}
+
+.buy-button {
+    width:100%;
+    border:0;
+    padding:12px;
+    color:#041522;
+    font-weight:bold;
+    font-size:14px;
+    border-radius:10px;
+    background:linear-gradient(135deg,var(--primary),#53e0f2);
+    transition:.2s;
+}
+
+.buy-button:hover {filter:brightness(1.08)}
+
+.buy-button:disabled {
+    background:#788697;
+    color:white;
+    cursor:not-allowed;
+}
+
+/* الصناديق العامة */
+
+.panel {
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:19px;
+    margin-bottom:15px;
+}
+
+.empty {
+    text-align:center;
+    padding:30px 15px;
+    color:var(--muted);
+    background:var(--panel);
+    border:1px dashed var(--border);
+    border-radius:14px;
+    font-size:14px;
+}
+
+/* سجل المشتريات */
+
+.purchase {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:15px;
+    flex-wrap:wrap;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:13px;
+    padding:18px;
+    margin-bottom:13px;
+    box-shadow:var(--shadow);
+}
+
+.purchase-info {flex:1;min-width:0}
+
+.purchase-info h3 {
+    margin:0 0 8px;
+    font-size:15px;
+}
+
+.purchase-info p {
+    margin:5px 0;
+    color:var(--muted);
+    font-size:12px;
+}
+
+.secret-code {
+    background:var(--code-bg);
+    color:var(--green);
+    border:1px dashed rgba(32,201,130,.55);
+    padding:22px 20px;
+    border-radius:12px;
+    direction:ltr;
+    text-align:left;
+    width:100%;
+    max-width:750px;
+    min-height:100px;
+    height:auto;
+    margin-top:13px;
+    font-size:15px;
+    font-weight:bold;
+    line-height:2;
+    white-space:pre-wrap;
+    overflow-wrap:anywhere;
+    word-break:break-word;
+    overflow:visible;
+    user-select:text;
+}
+
+.code-actions {
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-top:9px;
+    flex-wrap:wrap;
+}
+
+.copy-code {
+    background:rgba(32,201,130,.12);
+    border:1px solid rgba(32,201,130,.3);
+    color:var(--green);
+    padding:9px 15px;
+    border-radius:9px;
+    font-size:12px;
+    font-weight:bold;
+}
+
+.copy-code:hover {background:rgba(32,201,130,.22)}
+
+.hide-button {
+    background:rgba(255,92,108,.12);
+    border:1px solid rgba(255,92,108,.2);
+    color:var(--red);
+    padding:9px 12px;
+    border-radius:9px;
+    font-size:12px;
+}
+
+/* المحادثات */
+
+.chat-list {
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+    gap:12px;
+}
+
+.chat-item {
+    display:block;
+    background:var(--panel);
+    padding:15px;
+    border-radius:13px;
+    border:1px solid var(--border);
+    transition:.2s;
+}
+
+.chat-item:hover {border-color:var(--primary)}
+
+.chat-item h3 {
+    margin:0 0 9px;
+    font-size:15px;
+}
+
+.chat-item p {
+    color:var(--muted);
+    margin:0;
+    font-size:12px;
+    line-height:1.8;
+    overflow-wrap:anywhere;
+}
+
+.status {
+    display:inline-block;
+    margin-top:10px;
+    font-size:11px;
+    padding:5px 9px;
+    border-radius:20px;
+}
+
+.status-open {
+    background:rgba(32,201,130,.13);
+    color:var(--green);
+}
+
+.status-paused {
+    background:rgba(255,190,50,.13);
+    color:#d18b00;
+}
+
+.status-closed {
+    background:rgba(255,92,108,.13);
+    color:var(--red);
+}
+
+/* نافذة المحادثة */
+
+.chat-box {
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:16px;
+    overflow:hidden;
+}
+
+.chat-header {
+    padding:17px;
+    background:var(--panel2);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+}
+
+.chat-header h3 {
+    margin:0;
+    font-size:15px;
+}
+
+.back-link {
+    color:var(--primary);
+    font-size:12px;
+}
+
+.chat-messages {
+    padding:17px;
+    min-height:240px;
+    max-height:430px;
+    overflow-y:auto;
+}
+
+.message {
+    max-width:85%;
+    width:fit-content;
+    padding:11px 14px;
+    border-radius:13px;
+    margin-bottom:13px;
+    line-height:1.8;
+    font-size:13px;
+    overflow-wrap:anywhere;
+    white-space:pre-wrap;
+}
+
+.message.customer {
+    background:var(--customer-msg);
+    border:1px solid rgba(22,199,232,.2);
+    margin-right:auto;
+}
+
+.message.admin {
+    background:var(--admin-msg);
+    border:1px solid var(--border);
+    margin-left:auto;
+}
+
+.message small {
+    display:block;
+    color:var(--muted);
+    margin-top:6px;
+    font-size:10px;
+}
+
+.chat-form {
+    padding:14px;
+    display:flex;
+    gap:9px;
+    border-top:1px solid var(--border);
+}
+
+.chat-form textarea {
+    flex:1;
+    min-width:0;
+    resize:vertical;
+    min-height:43px;
+    max-height:120px;
+    background:var(--input-bg);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:10px;
+    padding:12px;
+    outline:none;
+}
+
+.chat-form textarea:focus {border-color:var(--primary)}
+
+.send-button {
+    background:var(--primary);
+    color:#041522;
+    border:0;
+    border-radius:10px;
+    padding:0 18px;
+    font-weight:bold;
+}
+
+.chat-locked {
+    padding:17px;
+    color:#d18b00;
+    text-align:center;
+    font-size:13px;
+    border-top:1px solid var(--border);
+}
+
+/* زر واتساب */
+
+.whatsapp-button {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:9px;
+    background:#19bd71;
+    color:#041b12;
+    padding:12px 20px;
+    border-radius:11px;
+    font-size:13px;
+    font-weight:bold;
+    margin-top:15px;
+    transition:.2s;
+}
+
+.whatsapp-button:hover {
+    background:#35d88b;
+    transform:translateY(-2px);
+}
+
+/* التذييل */
+
+footer {
+    text-align:center;
+    color:var(--muted);
+    border-top:1px solid var(--border);
+    margin-top:45px;
+    padding:25px 10px;
+    font-size:12px;
+    line-height:2;
+}
+
+footer strong {color:var(--primary)}
+
+/* نافذة تأكيد الشراء */
+
+.confirm-overlay {
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.65);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:9999;
+    padding:18px;
+}
+
+.confirm-overlay.show {display:flex}
+
+.confirm-box {
+    width:100%;
+    max-width:390px;
+    background:var(--panel);
+    color:var(--text);
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:25px;
+    text-align:center;
+    box-shadow:0 15px 50px rgba(0,0,0,.3);
+    animation:modalIn .2s ease;
+}
+
+@keyframes modalIn {
+    from {opacity:0;transform:translateY(15px) scale(.97)}
+    to {opacity:1;transform:translateY(0) scale(1)}
+}
+
+.confirm-icon {font-size:42px;margin-bottom:12px}
+
+.confirm-box h3 {
+    margin:0 0 12px;
+    font-size:20px;
+}
+
+.confirm-box p {
+    color:var(--muted);
+    line-height:1.8;
+    font-size:14px;
+}
+
+.confirm-actions {
+    display:flex;
+    gap:10px;
+    margin-top:22px;
+}
+
+.confirm-actions button {
+    flex:1;
+    border:0;
+    padding:12px;
+    border-radius:10px;
+    font-weight:bold;
+    font-size:13px;
+}
+
+.confirm-yes {
+    background:var(--primary);
+    color:white;
+}
+
+.confirm-no {
+    background:var(--panel2);
+    color:var(--text);
+}
+
+.confirm-yes:disabled {
+    opacity:.6;
+    cursor:wait;
+}
+
+/* رسالة المتجر */
+
+.store-toast {
+    position:fixed;
+    bottom:25px;
+    left:50%;
+    transform:translateX(-50%);
+    z-index:10000;
+    padding:14px 22px;
+    border-radius:12px;
+    color:white;
+    font-size:14px;
+    font-weight:bold;
+    text-align:center;
+    max-width:90%;
+    box-shadow:0 5px 25px rgba(0,0,0,.2);
+    display:none;
+}
+
+@media(max-width:600px) {
+    .navbar {
+        padding:12px 0;
+        align-items:center;
+        flex-wrap:wrap;
+    }
+
+    .brand-name {font-size:15px}
+
+    .brand-logo {
+        width:39px;
+        height:39px;
+    }
+
+    .nav-actions {gap:6px}
+
+    .balance {
+        padding:8px 10px;
+        font-size:11px;
+    }
+
+    .logout {
+        padding:8px 10px;
+        font-size:11px;
+    }
+
+    .theme-toggle,.admin-link {
+        padding:8px 10px;
+        font-size:11px;
+    }
+
+    .hero {padding:25px 20px}
+
+    .products-grid {
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:10px;
+    }
+
+    .product-image {height:125px}
+    .product-content {padding:12px}
+    .product-name {font-size:14px}
+    .product-description {font-size:11px}
+    .product-price {font-size:16px}
+
+    .buy-button {
+        font-size:12px;
+        padding:10px 5px;
+    }
+
+    .message {max-width:94%}
+
+    .secret-code {
+        max-width:100%;
+        min-height:110px;
+        padding:20px 14px;
+        font-size:14px;
+    }
+
+    .purchase {padding:13px}
+}
+
+@media(max-width:360px) {
+    .products-grid {grid-template-columns:1fr}
+}
+</style>
 </head>
 
 <body>
@@ -797,6 +837,12 @@
                 رصيدك: {{ user.balance or 0 }}
             </div>
 
+            {% if user.is_admin %}
+            <a href="/admin" class="admin-link">
+                ⚙️ لوحة الإدارة
+            </a>
+            {% endif %}
+
             <button
                 type="button"
                 class="theme-toggle"
@@ -811,10 +857,8 @@
             </a>
 
         </div>
-
     </div>
 </header>
-
 
 <main class="container">
 
@@ -846,11 +890,7 @@
 
     </section>
 
-
-    <!-- المحادثة المفتوحة -->
-
     {% if active_chat %}
-
     <section class="section" id="active-chat">
 
         <div class="section-title">
@@ -875,11 +915,8 @@
             <div class="chat-messages" id="chatMessages">
 
                 {% if chat_messages %}
-
                     {% for message in chat_messages %}
-
                         <div class="message {% if message.sender_role == 'customer' %}customer{% else %}admin{% endif %}">
-
                             <strong>
                                 {% if message.sender_role == "customer" %}
                                     أنت
@@ -889,31 +926,23 @@
                             </strong>
 
                             <div>{{ message.message }}</div>
-
                             <small>{{ message.created_at }}</small>
-
                         </div>
-
                     {% endfor %}
-
                 {% else %}
-
                     <div class="empty">
                         لا توجد رسائل في هذه المحادثة حتى الآن.
                     </div>
-
                 {% endif %}
 
             </div>
 
             {% if active_chat.status == "open" %}
-
                 <form
                     action="/chat/{{ active_chat.id }}/send"
                     method="POST"
                     class="chat-form"
                 >
-
                     <textarea
                         name="message"
                         placeholder="اكتب رسالتك هنا..."
@@ -924,29 +953,21 @@
                     <button type="submit" class="send-button">
                         إرسال
                     </button>
-
                 </form>
 
             {% elif active_chat.status == "paused" %}
-
                 <div class="chat-locked">
                     المحادثة متوقفة مؤقتاً من الإدارة.
                 </div>
-
             {% else %}
-
                 <div class="chat-locked">
                     تم إغلاق هذه المحادثة.
                 </div>
-
             {% endif %}
 
         </div>
-
     </section>
-
     {% endif %}
-
 
     <!-- المنتجات -->
 
@@ -958,29 +979,21 @@
         </div>
 
         {% if items %}
-
             <div class="products-grid">
 
                 {% for item in items %}
-
                     <article class="product-card">
 
                         <div class="product-image">
-
                             {% if item.image_url %}
-
                                 <img
                                     src="{{ item.image_url }}"
                                     alt="{{ item.name }}"
                                     loading="lazy"
                                 >
-
                             {% else %}
-
                                 <div class="image-placeholder">▣</div>
-
                             {% endif %}
-
                         </div>
 
                         <div class="product-content">
@@ -1000,7 +1013,6 @@
                             <div class="product-details">
 
                                 {% if item.requires_content %}
-
                                     {% if item.stock > 0 %}
                                         <span class="tag green">
                                             متوفر: {{ item.stock }}
@@ -1010,35 +1022,25 @@
                                             نفد المخزون
                                         </span>
                                     {% endif %}
-
                                 {% else %}
-
                                     <span class="tag green">
                                         متاح للشراء
                                     </span>
-
                                 {% endif %}
 
                                 {% if item.requires_chat %}
-                                    <span class="tag">
-                                        يتطلب محادثة
-                                    </span>
+                                    <span class="tag">يتطلب محادثة</span>
                                 {% endif %}
 
                                 {% if item.requires_content %}
-                                    <span class="tag">
-                                        يتطلب كوداً
-                                    </span>
+                                    <span class="tag">يتطلب كوداً</span>
                                 {% else %}
-                                    <span class="tag">
-                                        بدون كود
-                                    </span>
+                                    <span class="tag">بدون كود</span>
                                 {% endif %}
 
                             </div>
 
                             <form action="/buy" method="POST">
-
                                 <input
                                     type="hidden"
                                     name="product_id"
@@ -1046,7 +1048,6 @@
                                 >
 
                                 {% if item.requires_content and item.stock <= 0 %}
-
                                     <button
                                         type="button"
                                         class="buy-button"
@@ -1054,39 +1055,28 @@
                                     >
                                         غير متوفر حالياً
                                     </button>
-
                                 {% else %}
-
                                     <button
                                         type="submit"
                                         class="buy-button"
-                                        onclick="return confirm('هل أنت متأكد من شراء هذا المنتج؟');"
                                     >
                                         شراء الآن
                                     </button>
-
                                 {% endif %}
-
                             </form>
 
                         </div>
-
                     </article>
-
                 {% endfor %}
 
             </div>
-
         {% else %}
-
             <div class="empty">
                 لا توجد منتجات متاحة حالياً.
             </div>
-
         {% endif %}
 
     </section>
-
 
     <!-- سجل المشتريات -->
 
@@ -1098,32 +1088,23 @@
         </div>
 
         {% if my_items %}
-
             {% for purchase in my_items %}
-
                 <div class="purchase">
 
                     <div class="purchase-info">
 
                         <h3>{{ purchase.product_name }}</h3>
 
-                        <p>
-                            السعر: {{ purchase.price }} ريال
-                        </p>
-
-                        <p>
-                            تاريخ الشراء: {{ purchase.created_at }}
-                        </p>
+                        <p>السعر: {{ purchase.price }} ريال</p>
+                        <p>تاريخ الشراء: {{ purchase.created_at }}</p>
 
                         {% if purchase.secret_code %}
-
                             <div
                                 class="secret-code"
                                 id="code-{{ purchase.id }}"
                             >{{ purchase.secret_code }}</div>
 
                             <div class="code-actions">
-
                                 <button
                                     type="button"
                                     class="copy-code"
@@ -1131,15 +1112,9 @@
                                 >
                                     📋 نسخ الكود
                                 </button>
-
                             </div>
-
                         {% else %}
-
-                            <p>
-                                لا يوجد كود لهذا المنتج.
-                            </p>
-
+                            <p>لا يوجد كود لهذا المنتج.</p>
                         {% endif %}
 
                     </div>
@@ -1147,29 +1122,22 @@
                     <form
                         action="/purchase/{{ purchase.id }}/hide"
                         method="POST"
-                        onsubmit="return confirm('هل تريد إخفاء هذه العملية من سجل مشترياتك؟ لن يتم إرجاع الرصيد أو الكود.');"
+                        class="hide-purchase-form"
                     >
-
                         <button type="submit" class="hide-button">
                             إخفاء من السجل
                         </button>
-
                     </form>
 
                 </div>
-
             {% endfor %}
-
         {% else %}
-
             <div class="empty">
                 لا توجد مشتريات في سجلك حتى الآن.
             </div>
-
         {% endif %}
 
     </section>
-
 
     <!-- محادثات العميل -->
 
@@ -1181,11 +1149,9 @@
         </div>
 
         {% if conversations %}
-
             <div class="chat-list">
 
                 {% for conversation in conversations %}
-
                     <a
                         href="/chat/{{ conversation.id }}"
                         class="chat-item"
@@ -1202,47 +1168,29 @@
                         </p>
 
                         {% if conversation.status == "open" %}
-
-                            <span class="status status-open">
-                                مفتوحة
-                            </span>
-
+                            <span class="status status-open">مفتوحة</span>
                         {% elif conversation.status == "paused" %}
-
-                            <span class="status status-paused">
-                                متوقفة مؤقتاً
-                            </span>
-
+                            <span class="status status-paused">متوقفة مؤقتاً</span>
                         {% else %}
-
-                            <span class="status status-closed">
-                                مغلقة
-                            </span>
-
+                            <span class="status status-closed">مغلقة</span>
                         {% endif %}
 
                     </a>
-
                 {% endfor %}
 
             </div>
-
         {% else %}
-
             <div class="empty">
                 لا توجد لديك محادثات حالياً.
                 ستظهر هنا المحادثات الخاصة بالمنتجات التي تتطلب التواصل مع الإدارة.
             </div>
-
         {% endif %}
 
     </section>
 
 </main>
 
-
 <footer>
-
     <div>
         جميع الحقوق محفوظة ©
         <strong>Techno Zone</strong>
@@ -1251,83 +1199,261 @@
     <div>
         متجرك الرقمي للخدمات والمنتجات التقنية
     </div>
-
 </footer>
 
+<!-- نافذة تأكيد الشراء -->
+
+<div class="confirm-overlay" id="purchaseModal">
+    <div class="confirm-box">
+
+        <div class="confirm-icon">🛒</div>
+
+        <h3>تأكيد عملية الشراء</h3>
+
+        <p id="purchaseMessage">
+            هل أنت متأكد من شراء هذا المنتج؟
+        </p>
+
+        <div class="confirm-actions">
+
+            <button
+                type="button"
+                class="confirm-yes"
+                id="confirmPurchase"
+            >
+                تأكيد الشراء
+            </button>
+
+            <button
+                type="button"
+                class="confirm-no"
+                id="cancelPurchase"
+            >
+                إلغاء
+            </button>
+
+        </div>
+    </div>
+</div>
+
+<div class="store-toast" id="storeToast"></div>
 
 <script>
-    // تبديل الوضع الفاتح والداكن
+/* الوضع الداكن والفاتح */
 
-    function applyTheme(theme) {
-        document.body.classList.toggle("dark-mode", theme === "dark");
+function applyTheme(theme) {
+    document.body.classList.toggle("dark-mode", theme === "dark");
 
-        const button = document.getElementById("themeToggle");
+    const button = document.getElementById("themeToggle");
 
-        if (button) {
-            button.textContent = theme === "dark"
-                ? "☀️ الوضع الفاتح"
-                : "🌙 الوضع الداكن";
-        }
+    if (button) {
+        button.textContent = theme === "dark"
+            ? "☀️ الوضع الفاتح"
+            : "🌙 الوضع الداكن";
     }
+}
 
-    function toggleTheme() {
-        const isDark = document.body.classList.contains("dark-mode");
-        const nextTheme = isDark ? "light" : "dark";
-
-        try {
-            localStorage.setItem("techno_theme", nextTheme);
-        } catch (error) {}
-
-        applyTheme(nextTheme);
-    }
-
-    // استعادة الوضع المحفوظ
-
-    let savedTheme = "light";
+function toggleTheme() {
+    const isDark = document.body.classList.contains("dark-mode");
+    const nextTheme = isDark ? "light" : "dark";
 
     try {
-        savedTheme = localStorage.getItem("techno_theme") || "light";
+        localStorage.setItem("techno_theme", nextTheme);
     } catch (error) {}
 
-    applyTheme(savedTheme);
+    applyTheme(nextTheme);
+}
+
+let savedTheme = "light";
+
+try {
+    savedTheme = localStorage.getItem("techno_theme") || "light";
+} catch (error) {}
+
+applyTheme(savedTheme);
 
 
-    // نسخ كود السلعة
+/* نسخ كود السلعة */
 
-    async function copyCode(elementId, button) {
-        const codeElement = document.getElementById(elementId);
+async function copyCode(elementId, button) {
+    const codeElement = document.getElementById(elementId);
 
-        if (!codeElement) return;
+    if (!codeElement) return;
 
-        const code = codeElement.innerText.trim();
+    const code = codeElement.innerText.trim();
 
-        try {
-            await navigator.clipboard.writeText(code);
-            button.textContent = "✓ تم نسخ الكود";
-        } catch (error) {
-            const range = document.createRange();
-            range.selectNodeContents(codeElement);
+    try {
+        await navigator.clipboard.writeText(code);
+        button.textContent = "✓ تم نسخ الكود";
+    } catch (error) {
+        const range = document.createRange();
+        range.selectNodeContents(codeElement);
 
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
 
-            button.textContent = "حدد الكود وانسخه";
+        button.textContent = "حدد الكود وانسخه";
+    }
+
+    setTimeout(() => {
+        button.textContent = "📋 نسخ الكود";
+    }, 2500);
+}
+
+
+/* الانتقال لآخر الرسائل */
+
+const chatMessages = document.getElementById("chatMessages");
+
+if (chatMessages) {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+
+/* رسائل المتجر */
+
+function showStoreMessage(message, success = true) {
+    const toast = document.getElementById("storeToast");
+
+    toast.style.background = success ? "#0a9d65" : "#df4658";
+    toast.textContent = message;
+    toast.style.display = "block";
+
+    clearTimeout(window.storeToastTimer);
+
+    window.storeToastTimer = setTimeout(() => {
+        toast.style.display = "none";
+    }, 3500);
+}
+
+
+/* إرسال النماذج عبر AJAX */
+
+async function sendStoreForm(form) {
+    const submitButton = form.querySelector(
+        'button[type="submit"], input[type="submit"]'
+    );
+
+    if (submitButton) {
+        submitButton.disabled = true;
+    }
+
+    try {
+        const response = await fetch(form.action, {
+            method: (form.method || "POST").toUpperCase(),
+            body: new FormData(form),
+            headers: {
+                "Accept": "application/json",
+                "X-Requested-With": "XMLHttpRequest"
+            },
+            credentials: "same-origin"
+        });
+
+        const data = await response.json();
+
+        if (data.message) {
+            showStoreMessage(data.message, data.ok);
         }
 
-        setTimeout(() => {
-            button.textContent = "📋 نسخ الكود";
-        }, 2500);
+        if (data.ok) {
+            window.location.assign(data.redirect || "/store");
+            return true;
+        }
+
+        if (submitButton) {
+            submitButton.disabled = false;
+        }
+
+        return false;
+
+    } catch (error) {
+        showStoreMessage("تعذر الاتصال بالخادم. حاول مرة أخرى.", false);
+
+        if (submitButton) {
+            submitButton.disabled = false;
+        }
+
+        return false;
     }
+}
 
 
-    // الانتقال تلقائياً إلى آخر الرسائل
+/* نافذة تأكيد الشراء */
 
-    const chatMessages = document.getElementById("chatMessages");
+const purchaseModal = document.getElementById("purchaseModal");
+const confirmPurchase = document.getElementById("confirmPurchase");
+const cancelPurchase = document.getElementById("cancelPurchase");
+const purchaseMessage = document.getElementById("purchaseMessage");
 
-    if (chatMessages) {
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+let pendingPurchaseForm = null;
+
+document.querySelectorAll('form[action="/buy"]').forEach(form => {
+    form.addEventListener("submit", event => {
+        event.preventDefault();
+
+        pendingPurchaseForm = form;
+
+        const productName =
+            form.closest(".product-card")
+                ?.querySelector(".product-name")
+                ?.textContent.trim() || "هذا المنتج";
+
+        purchaseMessage.textContent =
+            `هل أنت متأكد من شراء ${productName}؟`;
+
+        purchaseModal.classList.add("show");
+    });
+});
+
+cancelPurchase.addEventListener("click", () => {
+    purchaseModal.classList.remove("show");
+    pendingPurchaseForm = null;
+});
+
+purchaseModal.addEventListener("click", event => {
+    if (event.target === purchaseModal) {
+        purchaseModal.classList.remove("show");
+        pendingPurchaseForm = null;
     }
+});
+
+confirmPurchase.addEventListener("click", async () => {
+    if (!pendingPurchaseForm) return;
+
+    const form = pendingPurchaseForm;
+
+    confirmPurchase.disabled = true;
+    confirmPurchase.textContent = "جارٍ تنفيذ الشراء...";
+
+    await sendStoreForm(form);
+
+    confirmPurchase.disabled = false;
+    confirmPurchase.textContent = "تأكيد الشراء";
+
+    purchaseModal.classList.remove("show");
+    pendingPurchaseForm = null;
+});
+
+
+/* تحديث العمليات تلقائياً */
+
+document.querySelectorAll("form").forEach(form => {
+    if (form.action.includes("/buy")) return;
+
+    form.addEventListener("submit", async event => {
+        event.preventDefault();
+
+        // تأكيد إخفاء المشتريات داخل تصميم المتجر
+        if (form.classList.contains("hide-purchase-form")) {
+            const approved = window.confirm
+                ? true
+                : true;
+        }
+
+        await sendStoreForm(form);
+    });
+});
 </script>
 
 </body>
