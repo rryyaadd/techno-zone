@@ -1326,7 +1326,7 @@ async def add_product(
     image_url: str = Form(""),
     description: str = Form(""),
     requires_chat: int = Form(0),
-    requires_content: int = Form(1),
+    requires_content: int = Form(0),
     image: UploadFile = File(None)
 ):
     if not is_admin(request):
