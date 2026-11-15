@@ -357,8 +357,7 @@ def init_db():
         """)
     except Exception as error:
         print("Product linking migration:", error)
-
-    try:
+            try:
         old_items = c.execute("""
             SELECT *
             FROM items
@@ -738,7 +737,7 @@ def customer_send(
     cid: int,
     message: str = Form(...)
 ):
-    user = get_user(request)
+        user = get_user(request)
 
     if not user or user.get("is_admin"):
         return action_response(
@@ -1050,7 +1049,9 @@ def hide_purchase(
         "تم إخفاء عملية الشراء",
         "/store"
     )
-    # ==========================================
+
+
+# ==========================================
 # لوحة الإدارة
 # ==========================================
 
@@ -1138,7 +1139,7 @@ def admin(
     if selected_product:
         selected_product_data = db.execute("""
             SELECT *
-            FROM products
+                     FROM products
             WHERE id=?
         """, (selected_product,)).fetchone()
 
@@ -1513,6 +1514,103 @@ def add_balance(
 
 
 # ==========================================
+# حذف حساب عميل نهائياً
+# ==========================================
+
+@app.post("/admin/delete_user")
+def delete_user(
+    request: Request,
+    user_id: int = Form(...)
+):
+    if not is_admin(request):
+        return action_response(
+            request, "غير مصرح", "/login", False
+        )
+
+    db = get_db()
+
+    try:
+        customer = db.execute("""
+            SELECT id, username, is_admin
+            FROM users
+            WHERE id=?
+        """, (user_id,)).fetchone()
+
+        if not customer:
+            db.close()
+            return action_response(
+                request, "العميل غير موجود", "/admin", False
+            )
+
+        if customer["is_admin"]:
+            db.close()
+            return action_response(
+                request, "لا يمكن حذف حساب المدير", "/admin", False
+            )
+
+        db.execute("""
+            DELETE FROM messages
+            WHERE conversation_id IN (
+                SELECT id
+                FROM conversations
+                WHERE user_id=?
+            )
+        """, (user_id,))
+
+        db.execute("""
+            DELETE FROM messages
+            WHERE sender_id=?
+            AND sender_role='customer'
+        """, (user_id,))
+
+        db.execute("""
+            DELETE FROM conversations
+            WHERE user_id=?
+        """, (user_id,))
+
+        db.execute("""
+            DELETE FROM purchases
+            WHERE user_id=?
+        """, (user_id,))
+
+        db.execute("""
+            UPDATE items
+            SET buyer_id=NULL
+            WHERE buyer_id=?
+        """, (user_id,))
+
+        db.execute("""
+            DELETE FROM users
+            WHERE id=?
+            AND is_admin=0
+        """, (user_id,))
+
+        db.commit()
+        db.close()
+
+        return action_response(
+            request,
+            f"تم حذف حساب العميل {customer['username']} نهائياً",
+            "/admin"
+        )
+
+    except Exception as error:
+        print("Delete customer error:", error)
+
+        try:
+            db.close()
+        except Exception:
+            pass
+
+        return action_response(
+            request,
+            "حدث خطأ أثناء حذف الحساب",
+            "/admin",
+            False
+        )
+
+
+# ==========================================
 # حذف منتج
 # ==========================================
 
@@ -1538,7 +1636,6 @@ def delete_product(
         DELETE FROM products
         WHERE id=?
     """, (product_id,))
-
     db.commit()
     db.close()
 
