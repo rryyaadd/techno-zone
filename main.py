@@ -1,7 +1,6 @@
-
-from fastapi import FastAPI, Request, Form
+from fastapi import FastAPI, Request, Form, UploadFile, File
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -9,6 +8,8 @@ import sqlite3
 import os
 import asyncio
 import requests
+import uuid
+from pathlib import Path
 
 
 # ==========================================
@@ -16,6 +17,7 @@ import requests
 # ==========================================
 
 os.makedirs("static", exist_ok=True)
+os.makedirs("static/uploads", exist_ok=True)
 os.makedirs("templates", exist_ok=True)
 
 app = FastAPI(title="Techno Zone Store")
@@ -38,6 +40,36 @@ templates = Jinja2Templates(directory="templates")
 
 WHATSAPP_NUMBER = "967778105690"
 WHATSAPP_LINK = "https://wa.me/967778105690"
+
+
+# ==========================================
+# استجابات AJAX
+# ==========================================
+
+def wants_json(request: Request):
+    return (
+        "application/json" in request.headers.get("accept", "")
+        or request.headers.get("x-requested-with") == "XMLHttpRequest"
+    )
+
+
+def action_response(
+    request: Request,
+    message="تم تنفيذ العملية بنجاح",
+    redirect_url="/",
+    ok=True
+):
+    if wants_json(request):
+        return JSONResponse({
+            "ok": ok,
+            "message": message,
+            "redirect": redirect_url
+        })
+
+    return RedirectResponse(
+        redirect_url,
+        status_code=303
+    )
 
 
 # ==========================================
@@ -396,8 +428,6 @@ def init_db():
 
 
 init_db()
-
-
 # ==========================================
 # تنظيف الأكواد المباعة القديمة
 # ==========================================
@@ -472,6 +502,12 @@ def login(
     db.close()
 
     if not user:
+        if wants_json(request):
+            return JSONResponse({
+                "ok": False,
+                "message": "بيانات الدخول خاطئة"
+            }, status_code=401)
+
         return templates.TemplateResponse(
             request=request,
             name="login.html",
@@ -484,10 +520,13 @@ def login(
         "is_admin": user["is_admin"]
     }
 
-    if user["is_admin"]:
-        return redirect("/admin")
+    destination = "/admin" if user["is_admin"] else "/store"
 
-    return redirect("/store")
+    return action_response(
+        request,
+        "تم تسجيل الدخول بنجاح",
+        destination
+    )
 
 
 # ==========================================
@@ -503,12 +542,18 @@ def register(
     username = username.strip()
 
     if len(username) < 3 or len(password) < 6:
+        message = "اسم المستخدم 3 أحرف على الأقل وكلمة المرور 6 أحرف"
+
+        if wants_json(request):
+            return JSONResponse({
+                "ok": False,
+                "message": message
+            }, status_code=400)
+
         return templates.TemplateResponse(
             request=request,
             name="login.html",
-            context={
-                "error": "اسم المستخدم 3 أحرف على الأقل وكلمة المرور 6 أحرف"
-            }
+            context={"error": message}
         )
 
     db = get_db()
@@ -524,17 +569,28 @@ def register(
 
         db.commit()
         db.close()
-        return redirect("/login")
+
+        return action_response(
+            request,
+            "تم إنشاء الحساب بنجاح",
+            "/login"
+        )
 
     except Exception:
         db.close()
 
+        message = "اسم المستخدم مستخدم مسبقاً"
+
+        if wants_json(request):
+            return JSONResponse({
+                "ok": False,
+                "message": message
+            }, status_code=409)
+
         return templates.TemplateResponse(
             request=request,
             name="login.html",
-            context={
-                "error": "اسم المستخدم مستخدم مسبقاً"
-            }
+            context={"error": message}
         )
 
 
@@ -638,9 +694,7 @@ def store(request: Request):
     if not get_user(request):
         return redirect("/login")
 
-    if is_admin(request):
-        return redirect("/admin")
-
+    # السماح للمدير بفتح المتجر أيضاً
     return templates.TemplateResponse(
         request=request,
         name="store.html",
@@ -687,12 +741,22 @@ def customer_send(
     user = get_user(request)
 
     if not user or user.get("is_admin"):
-        return redirect("/login")
+        return action_response(
+            request,
+            "يجب تسجيل الدخول كعميل",
+            "/login",
+            False
+        )
 
     message = message.strip()
 
     if not message:
-        return redirect(f"/chat/{cid}")
+        return action_response(
+            request,
+            "اكتب رسالة أولاً",
+            f"/chat/{cid}",
+            False
+        )
 
     db = get_db()
 
@@ -706,7 +770,16 @@ def customer_send(
         user["id"]
     )).fetchone()
 
-    if chat and chat["status"] == "open":
+    if not chat:
+        db.close()
+        return action_response(
+            request,
+            "المحادثة غير موجودة",
+            "/store",
+            False
+        )
+
+    if chat["status"] == "open":
         db.execute("""
             INSERT INTO messages(
                 conversation_id,
@@ -725,7 +798,12 @@ def customer_send(
         db.commit()
 
     db.close()
-    return redirect(f"/chat/{cid}")
+
+    return action_response(
+        request,
+        "تم إرسال الرسالة",
+        f"/chat/{cid}"
+    )
 
 
 # ==========================================
@@ -740,10 +818,20 @@ def buy(
     user = get_user(request)
 
     if not user:
-        return redirect("/login")
+        return action_response(
+            request,
+            "يرجى تسجيل الدخول",
+            "/login",
+            False
+        )
 
     if user.get("is_admin"):
-        return redirect("/admin")
+        return action_response(
+            request,
+            "حساب المدير لا يمكنه الشراء",
+            "/store",
+            False
+        )
 
     db = get_db()
 
@@ -762,13 +850,32 @@ def buy(
 
         if not buyer or not product:
             db.close()
-            return redirect("/store")
+            return action_response(
+                request,
+                "المنتج غير موجود",
+                "/store",
+                False
+            )
 
         price = float(product["price"] or 0)
 
-        if price < 0 or float(buyer["balance"] or 0) < price:
+        if price < 0:
             db.close()
-            return redirect("/store")
+            return action_response(
+                request,
+                "سعر المنتج غير صالح",
+                "/store",
+                False
+            )
+
+        if float(buyer["balance"] or 0) < price:
+            db.close()
+            return action_response(
+                request,
+                "رصيدك غير كافٍ",
+                "/store",
+                False
+            )
 
         selected_item = None
 
@@ -784,7 +891,12 @@ def buy(
 
             if not selected_item:
                 db.close()
-                return redirect("/store")
+                return action_response(
+                    request,
+                    "المنتج غير متوفر حالياً",
+                    "/store",
+                    False
+                )
 
             db.execute("""
                 UPDATE items
@@ -814,7 +926,12 @@ def buy(
 
             if not check_item:
                 db.close()
-                return redirect("/store")
+                return action_response(
+                    request,
+                    "تعذر إتمام عملية الشراء",
+                    "/store",
+                    False
+                )
 
         db.execute("""
             UPDATE users
@@ -864,7 +981,11 @@ def buy(
         db.commit()
         db.close()
 
-        return redirect("/store")
+        return action_response(
+            request,
+            "تم شراء المنتج بنجاح",
+            "/store"
+        )
 
     except Exception as error:
         print("Purchase error:", error)
@@ -874,7 +995,12 @@ def buy(
         except Exception:
             pass
 
-        return redirect("/store")
+        return action_response(
+            request,
+            "حدث خطأ أثناء الشراء",
+            "/store",
+            False
+        )
 
 
 # ==========================================
@@ -889,10 +1015,20 @@ def hide_purchase(
     user = get_user(request)
 
     if not user:
-        return redirect("/login")
+        return action_response(
+            request,
+            "يرجى تسجيل الدخول",
+            "/login",
+            False
+        )
 
     if user.get("is_admin"):
-        return redirect("/admin")
+        return action_response(
+            request,
+            "غير مسموح",
+            "/admin",
+            False
+        )
 
     db = get_db()
 
@@ -909,10 +1045,12 @@ def hide_purchase(
     db.commit()
     db.close()
 
-    return redirect("/store")
-
-
-# ==========================================
+    return action_response(
+        request,
+        "تم إخفاء عملية الشراء",
+        "/store"
+    )
+    # ==========================================
 # لوحة الإدارة
 # ==========================================
 
@@ -1034,12 +1172,16 @@ def admin_send(
     message: str = Form(...)
 ):
     if not is_admin(request):
-        return redirect("/login")
+        return action_response(
+            request, "غير مصرح", "/login", False
+        )
 
     message = message.strip()
 
     if not message:
-        return redirect(f"/admin?chat={cid}")
+        return action_response(
+            request, "اكتب رسالة أولاً", f"/admin?chat={cid}", False
+        )
 
     db = get_db()
 
@@ -1068,7 +1210,10 @@ def admin_send(
         db.commit()
 
     db.close()
-    return redirect(f"/admin?chat={cid}")
+
+    return action_response(
+        request, "تم إرسال الرد", f"/admin?chat={cid}"
+    )
 
 
 # ==========================================
@@ -1082,10 +1227,15 @@ def admin_chat_status(
     status: str = Form(...)
 ):
     if not is_admin(request):
-        return redirect("/login")
+        return action_response(
+            request, "غير مصرح", "/login", False
+        )
 
     if status not in ["open", "paused", "closed"]:
-        return redirect(f"/admin?chat={cid}")
+        return action_response(
+            request, "حالة المحادثة غير صحيحة",
+            f"/admin?chat={cid}", False
+        )
 
     db = get_db()
 
@@ -1101,7 +1251,9 @@ def admin_chat_status(
     db.commit()
     db.close()
 
-    return redirect(f"/admin?chat={cid}")
+    return action_response(
+        request, "تم تحديث حالة المحادثة", f"/admin?chat={cid}"
+    )
 
 
 # ==========================================
@@ -1111,7 +1263,9 @@ def admin_chat_status(
 @app.post("/admin/chat/{cid}/hide")
 def admin_chat_hide(request: Request, cid: int):
     if not is_admin(request):
-        return redirect("/login")
+        return action_response(
+            request, "غير مصرح", "/login", False
+        )
 
     db = get_db()
 
@@ -1124,7 +1278,9 @@ def admin_chat_hide(request: Request, cid: int):
     db.commit()
     db.close()
 
-    return redirect("/admin")
+    return action_response(
+        request, "تم إخفاء المحادثة", "/admin"
+    )
 
 
 # ==========================================
@@ -1134,7 +1290,9 @@ def admin_chat_hide(request: Request, cid: int):
 @app.post("/admin/chat/{cid}/unhide")
 def admin_chat_unhide(request: Request, cid: int):
     if not is_admin(request):
-        return redirect("/login")
+        return action_response(
+            request, "غير مصرح", "/login", False
+        )
 
     db = get_db()
 
@@ -1147,30 +1305,76 @@ def admin_chat_unhide(request: Request, cid: int):
     db.commit()
     db.close()
 
-    return redirect("/admin?show_hidden=1")
+    return action_response(
+        request, "تم إظهار المحادثة", "/admin?show_hidden=1"
+    )
 
 
 # ==========================================
-# إضافة منتج
+# إضافة منتج مع رفع صورة
 # ==========================================
 
 @app.post("/admin/add_product")
-def add_product(
+async def add_product(
     request: Request,
     name: str = Form(...),
     price: float = Form(...),
     image_url: str = Form(""),
     description: str = Form(""),
     requires_chat: int = Form(0),
-    requires_content: int = Form(1)
+    requires_content: int = Form(1),
+    image: UploadFile = File(None)
 ):
     if not is_admin(request):
-        return redirect("/login")
+        return action_response(
+            request, "غير مصرح", "/login", False
+        )
 
     name = name.strip()
 
     if not name or price < 0:
-        return redirect("/admin")
+        return action_response(
+            request, "اسم المنتج أو السعر غير صالح",
+            "/admin", False
+        )
+
+    image_path = image_url.strip()
+
+    if image and image.filename:
+        allowed_extensions = {
+            ".jpg", ".jpeg", ".png", ".webp"
+        }
+
+        extension = Path(image.filename).suffix.lower()
+
+        if extension not in allowed_extensions:
+            return action_response(
+                request,
+                "صيغة الصورة غير مدعومة",
+                "/admin",
+                False
+            )
+
+        content = await image.read()
+
+        if len(content) > 5 * 1024 * 1024:
+            return action_response(
+                request,
+                "حجم الصورة يجب ألا يتجاوز 5 ميجابايت",
+                "/admin",
+                False
+            )
+
+        filename = f"{uuid.uuid4().hex}{extension}"
+        upload_dir = Path("static/uploads")
+        upload_dir.mkdir(parents=True, exist_ok=True)
+
+        file_path = upload_dir / filename
+
+        with open(file_path, "wb") as f:
+            f.write(content)
+
+        image_path = f"/static/uploads/{filename}"
 
     requires_chat = 1 if requires_chat else 0
     requires_content = 1 if requires_content else 0
@@ -1190,7 +1394,7 @@ def add_product(
     """, (
         name,
         price,
-        image_url.strip(),
+        image_path,
         description.strip(),
         requires_chat,
         requires_content
@@ -1199,7 +1403,9 @@ def add_product(
     db.commit()
     db.close()
 
-    return redirect("/admin")
+    return action_response(
+        request, "تمت إضافة المنتج بنجاح", "/admin"
+    )
 
 
 # ==========================================
@@ -1210,10 +1416,12 @@ def add_product(
 def add_content(
     request: Request,
     product_id: int = Form(...),
-    content: str = Form(...)
+    secret_code: str = Form(...)
 ):
     if not is_admin(request):
-        return redirect("/login")
+        return action_response(
+            request, "غير مصرح", "/login", False
+        )
 
     db = get_db()
 
@@ -1225,11 +1433,14 @@ def add_content(
 
     if not product or not product["requires_content"]:
         db.close()
-        return redirect("/admin")
+        return action_response(
+            request, "المنتج غير موجود أو لا يقبل الأكواد",
+            "/admin", False
+        )
 
     lines = [
         line.strip()
-        for line in content.splitlines()
+        for line in secret_code.splitlines()
         if line.strip()
     ]
 
@@ -1253,7 +1464,11 @@ def add_content(
     db.commit()
     db.close()
 
-    return redirect(f"/admin?selected_product={product_id}")
+    return action_response(
+        request,
+        f"تمت إضافة {len(lines)} كود",
+        f"/admin?selected_product={product_id}"
+    )
 
 
 # ==========================================
@@ -1267,10 +1482,15 @@ def add_balance(
     amount: float = Form(...)
 ):
     if not is_admin(request):
-        return redirect("/login")
+        return action_response(
+            request, "غير مصرح", "/login", False
+        )
 
     if amount <= 0:
-        return redirect("/admin")
+        return action_response(
+            request, "المبلغ يجب أن يكون أكبر من صفر",
+            "/admin", False
+        )
 
     db = get_db()
 
@@ -1287,7 +1507,9 @@ def add_balance(
     db.commit()
     db.close()
 
-    return redirect("/admin")
+    return action_response(
+        request, "تم شحن الرصيد بنجاح", "/admin"
+    )
 
 
 # ==========================================
@@ -1300,7 +1522,9 @@ def delete_product(
     product_id: int = Form(...)
 ):
     if not is_admin(request):
-        return redirect("/login")
+        return action_response(
+            request, "غير مصرح", "/login", False
+        )
 
     db = get_db()
 
@@ -1318,7 +1542,9 @@ def delete_product(
     db.commit()
     db.close()
 
-    return redirect("/admin")
+    return action_response(
+        request, "تم حذف المنتج", "/admin"
+    )
 
 
 # ==========================================
