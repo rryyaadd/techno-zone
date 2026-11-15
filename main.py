@@ -3,9 +3,20 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
-import sqlite3, os, asyncio, base64, requests
+
+import sqlite3
+import os
+import asyncio
+import base64
+import requests
+
+
+# ==========================================
+# إعداد التطبيق
+# ==========================================
 
 os.makedirs("static", exist_ok=True)
+os.makedirs("templates", exist_ok=True)
 
 app = FastAPI(title="Techno Zone Store")
 
@@ -17,10 +28,21 @@ app.add_middleware(
     )
 )
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount(
+    "/static",
+    StaticFiles(directory="static"),
+    name="static"
+)
+
 templates = Jinja2Templates(directory="templates")
 
 WHATSAPP_NUMBER = "967778105690"
+WHATSAPP_LINK = "https://wa.me/967778105690"
+
+
+# ==========================================
+# إعداد Turso
+# ==========================================
 
 TURSO_URL = os.environ.get(
     "TURSO_DATABASE_URL", ""
@@ -32,12 +54,12 @@ TURSO_TOKEN = os.environ.get("TURSO_AUTH_TOKEN", "")
 class TursoCursor:
     def __init__(self, rows=None):
         self.rows = rows or []
-        self.i = 0
+        self.index = 0
 
     def fetchone(self):
-        if self.i < len(self.rows):
-            row = self.rows[self.i]
-            self.i += 1
+        if self.index < len(self.rows):
+            row = self.rows[self.index]
+            self.index += 1
             return row
         return None
 
@@ -53,23 +75,32 @@ class TursoConnection:
             "Content-Type": "application/json"
         }
 
-    def _arg(self, x):
-        if x is None:
+    def _arg(self, value):
+        if value is None:
             return {"type": "null"}
 
-        if isinstance(x, bool):
+        if isinstance(value, bool):
             return {
                 "type": "integer",
-                "value": "1" if x else "0"
+                "value": "1" if value else "0"
             }
 
-        if isinstance(x, int):
-            return {"type": "integer", "value": str(x)}
+        if isinstance(value, int):
+            return {
+                "type": "integer",
+                "value": str(value)
+            }
 
-        if isinstance(x, float):
-            return {"type": "float", "value": x}
+        if isinstance(value, float):
+            return {
+                "type": "float",
+                "value": value
+            }
 
-        return {"type": "text", "value": str(x)}
+        return {
+            "type": "text",
+            "value": str(value)
+        }
 
     def execute(self, sql, params=()):
         payload = {
@@ -78,7 +109,10 @@ class TursoConnection:
                     "type": "execute",
                     "stmt": {
                         "sql": sql,
-                        "args": [self._arg(x) for x in params]
+                        "args": [
+                            self._arg(value)
+                            for value in params
+                        ]
                     }
                 },
                 {"type": "close"}
@@ -93,20 +127,26 @@ class TursoConnection:
         )
 
         response.raise_for_status()
-        item = response.json()["results"][0]
+
+        data = response.json()
+        item = data["results"][0]
 
         if item["type"] == "error":
             raise Exception(item["error"]["message"])
 
         result = item["response"]["result"]
-        columns = [c["name"] for c in result.get("cols", [])]
+
+        columns = [
+            column["name"]
+            for column in result.get("cols", [])
+        ]
 
         rows = []
 
-        for raw in result.get("rows", []):
+        for raw_row in result.get("rows", []):
             row = {}
 
-            for name, cell in zip(columns, raw):
+            for name, cell in zip(columns, raw_row):
                 value = cell.get("value")
 
                 if cell["type"] == "integer" and value is not None:
@@ -139,13 +179,21 @@ def get_db():
         "technozone.db",
         check_same_thread=False
     )
+
     db.row_factory = sqlite3.Row
     return db
 
 
 def redirect(path):
-    return RedirectResponse(path, status_code=303)
+    return RedirectResponse(
+        path,
+        status_code=303
+    )
 
+
+# ==========================================
+# المستخدمون والصلاحيات
+# ==========================================
 
 def get_user(request):
     return request.session.get("user")
@@ -155,6 +203,14 @@ def is_admin(request):
     user = get_user(request)
     return bool(user and user.get("is_admin"))
 
+
+def require_login(request):
+    return bool(get_user(request))
+
+
+# ==========================================
+# إنشاء الجداول وتحديث قاعدة البيانات
+# ==========================================
 
 def init_db():
     db = get_db()
@@ -232,14 +288,21 @@ def init_db():
         created_at TEXT DEFAULT (datetime('now'))
     )
     """)
-        # إضافة الحقول الجديدة عند تحديث قاعدة قديمة
+
+    # أعمدة إضافية لقواعد البيانات القديمة
     migrations = [
+        "ALTER TABLE products ADD COLUMN image_url TEXT",
         "ALTER TABLE products ADD COLUMN description TEXT",
         "ALTER TABLE products ADD COLUMN requires_chat INTEGER DEFAULT 0",
         "ALTER TABLE products ADD COLUMN requires_content INTEGER DEFAULT 1",
-        "ALTER TABLE items ADD COLUMN product_id INTEGER",
+
+        "ALTER TABLE items ADD COLUMN buyer_id INTEGER",
         "ALTER TABLE items ADD COLUMN image_url TEXT",
-        "ALTER TABLE items ADD COLUMN sold_at TEXT"
+        "ALTER TABLE items ADD COLUMN product_id INTEGER",
+        "ALTER TABLE items ADD COLUMN sold_at TEXT",
+
+        "ALTER TABLE purchases ADD COLUMN hidden INTEGER DEFAULT 0",
+        "ALTER TABLE conversations ADD COLUMN hidden INTEGER DEFAULT 0"
     ]
 
     for sql in migrations:
@@ -248,60 +311,101 @@ def init_db():
         except Exception:
             pass
 
-    # ترحيل المشتريات القديمة إلى جدول المشتريات الجديد
-    old_items = c.execute("""
-        SELECT i.*, i.buyer_id AS old_buyer
-        FROM items i
-        WHERE i.is_sold=1
-        AND i.buyer_id IS NOT NULL
-    """).fetchall()
+    # ربط الأكواد القديمة بالمنتجات التي تحمل الاسم نفسه
+    try:
+        c.execute("""
+            UPDATE items
+            SET product_id = (
+                SELECT products.id
+                FROM products
+                WHERE products.name = items.name
+                ORDER BY products.id DESC
+                LIMIT 1
+            )
+            WHERE product_id IS NULL
+        """)
+    except Exception as error:
+        print("Product linking migration:", error)
 
-    for item in old_items:
-        exists = c.execute(
-            "SELECT id FROM purchases WHERE item_id=?",
-            (item["id"],)
-        ).fetchone()
+    # نقل المشتريات القديمة إلى جدول purchases
+    try:
+        old_items = c.execute("""
+            SELECT *
+            FROM items
+            WHERE is_sold=1
+            AND buyer_id IS NOT NULL
+        """).fetchall()
 
-        if not exists:
-            c.execute("""
-                INSERT INTO purchases(
-                    user_id, product_id, product_name,
-                    price, item_id, secret_code
-                )
-                VALUES(?,?,?,?,?,?)
-            """, (
-                item["buyer_id"],
-                item["product_id"],
-                item["name"],
-                item["price"],
-                item["id"],
-                item["secret_code"]
-            ))
+        for item in old_items:
+            exists = c.execute("""
+                SELECT id
+                FROM purchases
+                WHERE item_id=?
+            """, (item["id"],)).fetchone()
 
-    admin = c.execute(
-        "SELECT id FROM users WHERE is_admin=1 LIMIT 1"
-    ).fetchone()
+            if not exists:
+                c.execute("""
+                    INSERT INTO purchases(
+                        user_id,
+                        product_id,
+                        product_name,
+                        price,
+                        item_id,
+                        secret_code
+                    )
+                    VALUES(?,?,?,?,?,?)
+                """, (
+                    item["buyer_id"],
+                    item["product_id"],
+                    item["name"],
+                    item["price"],
+                    item["id"],
+                    item["secret_code"]
+                ))
+
+    except Exception as error:
+        print("Purchase migration:", error)
+
+    # إنشاء حساب المدير الافتراضي إذا لم يوجد مدير
+    admin = c.execute("""
+        SELECT id
+        FROM users
+        WHERE is_admin=1
+        LIMIT 1
+    """).fetchone()
 
     if not admin:
-        old_admin = c.execute(
-            "SELECT id FROM users WHERE username='admin'"
-        ).fetchone()
+        old_admin = c.execute("""
+            SELECT id
+            FROM users
+            WHERE username='admin'
+        """).fetchone()
 
         if not old_admin:
             c.execute("""
-                INSERT INTO users(username,password,is_admin)
+                INSERT INTO users(
+                    username,
+                    password,
+                    is_admin
+                )
                 VALUES(?,?,1)
-            """, ("admin", "CHANGE_ADMIN_PASSWORD"))
+            """, (
+                "admin",
+                "CHANGE_ADMIN_PASSWORD"
+            ))
 
     db.commit()
     db.close()
 
 
 init_db()
-
+# ==========================================
+# تنظيف الأكواد المباعة القديمة
+# ==========================================
 
 @app.on_event("startup")
 async def cleanup_task():
+
     async def loop():
         while True:
             try:
@@ -317,20 +421,29 @@ async def cleanup_task():
                 db.commit()
                 db.close()
 
-            except Exception as e:
-                print("Cleanup error:", e)
+            except Exception as error:
+                print("Cleanup error:", error)
 
             await asyncio.sleep(3600)
 
     asyncio.create_task(loop())
 
 
+# ==========================================
+# الصفحة الرئيسية
+# ==========================================
+
 @app.get("/")
 def home(request: Request):
     if get_user(request):
         return redirect("/store")
+
     return redirect("/login")
 
+
+# ==========================================
+# تسجيل الدخول
+# ==========================================
 
 @app.get("/login", response_class=HTMLResponse)
 def login_page(request: Request):
@@ -349,10 +462,14 @@ def login(
 ):
     db = get_db()
 
-    user = db.execute(
-        "SELECT * FROM users WHERE username=? AND password=?",
-        (username, password)
-    ).fetchone()
+    user = db.execute("""
+        SELECT *
+        FROM users
+        WHERE username=? AND password=?
+    """, (
+        username.strip(),
+        password
+    )).fetchone()
 
     db.close()
 
@@ -369,8 +486,15 @@ def login(
         "is_admin": user["is_admin"]
     }
 
+    if user["is_admin"]:
+        return redirect("/admin")
+
     return redirect("/store")
 
+
+# ==========================================
+# إنشاء حساب جديد
+# ==========================================
 
 @app.post("/register")
 def register(
@@ -378,13 +502,27 @@ def register(
     username: str = Form(...),
     password: str = Form(...)
 ):
+    username = username.strip()
+
+    if len(username) < 3 or len(password) < 6:
+        return templates.TemplateResponse(
+            request=request,
+            name="login.html",
+            context={
+                "error": "اسم المستخدم 3 أحرف على الأقل وكلمة المرور 6 أحرف"
+            }
+        )
+
     db = get_db()
 
     try:
-        db.execute(
-            "INSERT INTO users(username,password) VALUES(?,?)",
-            (username, password)
-        )
+        db.execute("""
+            INSERT INTO users(username, password)
+            VALUES(?,?)
+        """, (
+            username,
+            password
+        ))
 
         db.commit()
         db.close()
@@ -397,27 +535,42 @@ def register(
         return templates.TemplateResponse(
             request=request,
             name="login.html",
-            context={"error": "اسم المستخدم مستخدم مسبقاً"}
+            context={
+                "error": "اسم المستخدم مستخدم مسبقاً"
+            }
         )
 
 
+# ==========================================
+# تجهيز بيانات صفحة المتجر
+# ==========================================
+
 def get_store_context(request, chat_id=None):
+
     user = get_user(request)
+
+    if not user:
+        return {}
+
     db = get_db()
 
-    db_user = db.execute(
-        "SELECT * FROM users WHERE id=?",
-        (user["id"],)
-    ).fetchone()
+    db_user = db.execute("""
+        SELECT *
+        FROM users
+        WHERE id=?
+    """, (user["id"],)).fetchone()
 
     products = db.execute("""
         SELECT
             p.*,
             COUNT(
-                CASE WHEN i.is_sold=0 THEN 1 END
+                CASE
+                    WHEN i.is_sold=0 THEN 1
+                END
             ) AS stock
         FROM products p
-        LEFT JOIN items i ON i.product_id=p.id
+        LEFT JOIN items i
+            ON i.product_id=p.id
         GROUP BY p.id
         ORDER BY p.id DESC
     """).fetchall()
@@ -425,7 +578,8 @@ def get_store_context(request, chat_id=None):
     purchases = db.execute("""
         SELECT *
         FROM purchases
-        WHERE user_id=? AND hidden=0
+        WHERE user_id=?
+        AND hidden=0
         ORDER BY id DESC
     """, (user["id"],)).fetchall()
 
@@ -436,7 +590,8 @@ def get_store_context(request, chat_id=None):
                 SELECT message
                 FROM messages m
                 WHERE m.conversation_id=c.id
-                ORDER BY m.id DESC LIMIT 1
+                ORDER BY m.id DESC
+                LIMIT 1
             ) AS last_message
         FROM conversations c
         WHERE c.user_id=?
@@ -450,15 +605,19 @@ def get_store_context(request, chat_id=None):
         active_chat = db.execute("""
             SELECT *
             FROM conversations
-            WHERE id=? AND user_id=?
-        """, (chat_id, user["id"])).fetchone()
+            WHERE id=?
+            AND user_id=?
+        """, (
+            chat_id,
+            user["id"]
+        )).fetchone()
 
         if active_chat:
             chat_messages = db.execute("""
                 SELECT *
                 FROM messages
                 WHERE conversation_id=?
-                ORDER BY id
+                ORDER BY id ASC
             """, (chat_id,)).fetchall()
 
     db.close()
@@ -470,14 +629,23 @@ def get_store_context(request, chat_id=None):
         "conversations": chats,
         "active_chat": active_chat,
         "chat_messages": chat_messages,
-        "whatsapp_number": WHATSAPP_NUMBER
+        "whatsapp_number": WHATSAPP_NUMBER,
+        "whatsapp_link": WHATSAPP_LINK
     }
 
 
+# ==========================================
+# صفحة المتجر
+# ==========================================
+
 @app.get("/store", response_class=HTMLResponse)
 def store(request: Request):
+
     if not get_user(request):
         return redirect("/login")
+
+    if is_admin(request):
+        return redirect("/admin")
 
     return templates.TemplateResponse(
         request=request,
@@ -486,8 +654,16 @@ def store(request: Request):
     )
 
 
+# ==========================================
+# فتح محادثة العميل
+# ==========================================
+
 @app.get("/chat/{cid}", response_class=HTMLResponse)
-def customer_chat(request: Request, cid: int):
+def customer_chat(
+    request: Request,
+    cid: int
+):
+
     user = get_user(request)
 
     if not user:
@@ -498,7 +674,7 @@ def customer_chat(request: Request, cid: int):
 
     context = get_store_context(request, cid)
 
-    if not context["active_chat"]:
+    if not context.get("active_chat"):
         return redirect("/store")
 
     return templates.TemplateResponse(
@@ -508,36 +684,54 @@ def customer_chat(request: Request, cid: int):
     )
 
 
+# ==========================================
+# إرسال رسالة من العميل
+# ==========================================
+
 @app.post("/chat/{cid}/send")
 def customer_send(
     request: Request,
     cid: int,
     message: str = Form(...)
 ):
+
     user = get_user(request)
 
     if not user or user.get("is_admin"):
         return redirect("/login")
+
+    message = message.strip()
+
+    if not message:
+        return redirect(f"/chat/{cid}")
 
     db = get_db()
 
     chat = db.execute("""
         SELECT *
         FROM conversations
-        WHERE id=? AND user_id=?
-    """, (cid, user["id"])).fetchone()
+        WHERE id=?
+        AND user_id=?
+    """, (
+        cid,
+        user["id"]
+    )).fetchone()
 
-    if chat and chat["status"] == "open" and message.strip():
+    if chat and chat["status"] == "open":
+
         db.execute("""
             INSERT INTO messages(
-                conversation_id, sender_id, sender_role, message
+                conversation_id,
+                sender_id,
+                sender_role,
+                message
             )
             VALUES(?,?,?,?)
         """, (
             cid,
             user["id"],
             "customer",
-            message.strip()[:5000]
+            message[:5000]
         ))
 
         db.commit()
@@ -547,45 +741,60 @@ def customer_send(
     return redirect(f"/chat/{cid}")
 
 
+# ==========================================
+# شراء منتج
+# ==========================================
+
 @app.post("/buy")
 def buy(
     request: Request,
     product_id: int = Form(...)
 ):
+
     user = get_user(request)
 
     if not user:
         return redirect("/login")
 
+    if user.get("is_admin"):
+        return redirect("/admin")
+
     db = get_db()
 
     try:
-        buyer = db.execute(
-            "SELECT * FROM users WHERE id=?",
-            (user["id"],)
-        ).fetchone()
+        buyer = db.execute("""
+            SELECT *
+            FROM users
+            WHERE id=?
+        """, (user["id"],)).fetchone()
 
-        product = db.execute(
-            "SELECT * FROM products WHERE id=?",
-            (product_id,)
-        ).fetchone()
+        product = db.execute("""
+            SELECT *
+            FROM products
+            WHERE id=?
+        """, (product_id,)).fetchone()
 
         if not buyer or not product:
             db.close()
             return redirect("/store")
 
-        if buyer["balance"] < product["price"]:
+        price = float(product["price"] or 0)
+
+        if price < 0 or float(buyer["balance"] or 0) < price:
             db.close()
             return redirect("/store")
 
         selected_item = None
 
+        # إذا كان المنتج يتطلب كوداً
         if product["requires_content"]:
+
             selected_item = db.execute("""
                 SELECT *
                 FROM items
-                WHERE product_id=? AND is_sold=0
-                ORDER BY id
+                WHERE product_id=?
+                AND is_sold=0
+                ORDER BY id ASC
                 LIMIT 1
             """, (product_id,)).fetchone()
 
@@ -593,37 +802,76 @@ def buy(
                 db.close()
                 return redirect("/store")
 
-            db.execute("""
+            result = db.execute("""
                 UPDATE items
-                SET is_sold=1, buyer_id=?, sold_at=datetime('now')
-                WHERE id=? AND is_sold=0
-            """, (user["id"], selected_item["id"]))
+                SET
+                    is_sold=1,
+                    buyer_id=?,
+                    sold_at=datetime('now')
+                WHERE id=?
+                AND is_sold=0
+            """, (
+                user["id"],
+                selected_item["id"]
+            ))
 
+            db.commit()
+
+            # التأكد من عدم بيع الكود مرتين
+            check_item = db.execute("""
+                SELECT *
+                FROM items
+                WHERE id=?
+                AND is_sold=1
+                AND buyer_id=?
+            """, (
+                selected_item["id"],
+                user["id"]
+            )).fetchone()
+
+            if not check_item:
+                db.close()
+                return redirect("/store")
+
+        # خصم الرصيد
         db.execute("""
             UPDATE users
             SET balance=balance-?
             WHERE id=?
-        """, (product["price"], user["id"]))
+        """, (
+            price,
+            user["id"]
+        ))
 
+        # تسجيل عملية الشراء
         db.execute("""
             INSERT INTO purchases(
-                user_id, product_id, product_name,
-                price, item_id, secret_code
+                user_id,
+                product_id,
+                product_name,
+                price,
+                item_id,
+                secret_code
             )
             VALUES(?,?,?,?,?,?)
         """, (
             user["id"],
             product_id,
             product["name"],
-            product["price"],
+            price,
             selected_item["id"] if selected_item else None,
             selected_item["secret_code"] if selected_item else None
         ))
 
+        # إنشاء محادثة إذا كان المنتج يتطلب محادثة
         if product["requires_chat"]:
+
             db.execute("""
                 INSERT INTO conversations(
-                    user_id, product_id, product_name, status
+                    user_id,
+                    product_id,
+                    product_name,
+                    status
                 )
                 VALUES(?,?,?,'open')
             """, (
@@ -633,34 +881,59 @@ def buy(
             ))
 
         db.commit()
-
-    except Exception:
         db.close()
-        raise
 
-    db.close()
-    return redirect("/store")
+        return redirect("/store")
 
+    except Exception as error:
+        print("Purchase error:", error)
+
+        try:
+            db.close()
+        except Exception:
+            pass
+
+        return redirect("/store")
+
+
+# ==========================================
+# إخفاء عملية شراء من سجل العميل
+# ==========================================
 
 @app.post("/purchase/{purchase_id}/hide")
-def hide_purchase(request: Request, purchase_id: int):
+def hide_purchase(
+    request: Request,
+    purchase_id: int
+):
+
     user = get_user(request)
 
     if not user:
         return redirect("/login")
+
+    if user.get("is_admin"):
+        return redirect("/admin")
 
     db = get_db()
 
     db.execute("""
         UPDATE purchases
         SET hidden=1
-        WHERE id=? AND user_id=?
-    """, (purchase_id, user["id"]))
+        WHERE id=?
+        AND user_id=?
+    """, (
+        purchase_id,
+        user["id"]
+    ))
 
     db.commit()
     db.close()
 
     return redirect("/store")
+    # ==========================================
+# لوحة الإدارة
+# ==========================================
+
 @app.get("/admin", response_class=HTMLResponse)
 def admin(
     request: Request,
@@ -668,24 +941,34 @@ def admin(
     show_hidden: int = 0,
     selected_product: int = None
 ):
+
     if not is_admin(request):
-        return redirect("/store")
+        return redirect("/login")
 
     db = get_db()
 
     products = db.execute("""
         SELECT
             p.*,
-            COUNT(i.id) AS total_codes,
-            SUM(CASE WHEN i.is_sold=0 THEN 1 ELSE 0 END) AS available_codes
+            COUNT(
+                CASE
+                    WHEN i.id IS NOT NULL THEN 1
+                END
+            ) AS total_codes,
+            COUNT(
+                CASE
+                    WHEN i.id IS NOT NULL AND i.is_sold=0 THEN 1
+                END
+            ) AS available_codes
         FROM products p
-        LEFT JOIN items i ON i.product_id=p.id
+        LEFT JOIN items i
+            ON i.product_id=p.id
         GROUP BY p.id
         ORDER BY p.id DESC
     """).fetchall()
 
     users = db.execute("""
-        SELECT id,username,balance
+        SELECT id, username, balance
         FROM users
         WHERE is_admin=0
         ORDER BY id DESC
@@ -699,22 +982,29 @@ def admin(
                 SELECT message
                 FROM messages m
                 WHERE m.conversation_id=c.id
-                ORDER BY m.id DESC LIMIT 1
+                ORDER BY m.id DESC
+                LIMIT 1
             ) AS last_message
         FROM conversations c
-        JOIN users u ON u.id=c.user_id
+        JOIN users u
+            ON u.id=c.user_id
         WHERE (?=1 OR c.hidden=0)
         ORDER BY c.id DESC
-    """, (show_hidden,)).fetchall()
+    """, (
+        1 if show_hidden else 0,
+    )).fetchall()
 
     active_chat = None
     chat_messages = []
 
     if chat:
         active_chat = db.execute("""
-            SELECT c.*,u.username
+            SELECT
+                c.*,
+                u.username
             FROM conversations c
-            JOIN users u ON u.id=c.user_id
+            JOIN users u
+                ON u.id=c.user_id
             WHERE c.id=?
         """, (chat,)).fetchone()
 
@@ -723,7 +1013,7 @@ def admin(
                 SELECT *
                 FROM messages
                 WHERE conversation_id=?
-                ORDER BY id
+                ORDER BY id ASC
             """, (chat,)).fetchall()
 
     db.close()
@@ -731,275 +1021,4 @@ def admin(
     return templates.TemplateResponse(
         request=request,
         name="admin.html",
-        context={
-            "products": products,
-            "users": users,
-            "conversations": chats,
-            "active_chat": active_chat,
-            "chat_messages": chat_messages,
-            "show_hidden": show_hidden,
-            "selected_product": selected_product,
-            "whatsapp_number": WHATSAPP_NUMBER
-        }
-    )
-
-
-@app.post("/admin/chat/{cid}/send")
-def admin_send(
-    request: Request,
-    cid: int,
-    message: str = Form(...)
-):
-    user = get_user(request)
-
-    if not user or not user.get("is_admin"):
-        return redirect("/login")
-
-    db = get_db()
-
-    chat = db.execute(
-        "SELECT * FROM conversations WHERE id=?",
-        (cid,)
-    ).fetchone()
-
-    if chat and chat["status"] != "closed" and message.strip():
-        db.execute("""
-            INSERT INTO messages(
-                conversation_id, sender_id, sender_role, message
-            )
-            VALUES(?,?,?,?)
-        """, (
-            cid,
-            user["id"],
-            "admin",
-            message.strip()[:5000]
-        ))
-
-        db.commit()
-
-    db.close()
-    return redirect(f"/admin?chat={cid}")
-
-
-@app.post("/admin/chat/{cid}/status")
-def chat_status(
-    request: Request,
-    cid: int,
-    status: str = Form(...)
-):
-    if not is_admin(request):
-        return redirect("/login")
-
-    if status not in ("open", "paused", "closed"):
-        return redirect("/admin")
-
-    db = get_db()
-
-    db.execute(
-        "UPDATE conversations SET status=? WHERE id=?",
-        (status, cid)
-    )
-
-    db.commit()
-    db.close()
-
-    return redirect(f"/admin?chat={cid}")
-
-
-@app.post("/admin/chat/{cid}/hide")
-def chat_hide(request: Request, cid: int):
-    if not is_admin(request):
-        return redirect("/login")
-
-    db = get_db()
-    db.execute(
-        "UPDATE conversations SET hidden=1 WHERE id=?",
-        (cid,)
-    )
-    db.commit()
-    db.close()
-
-    return redirect("/admin")
-
-
-@app.post("/admin/chat/{cid}/unhide")
-def chat_unhide(request: Request, cid: int):
-    if not is_admin(request):
-        return redirect("/login")
-
-    db = get_db()
-    db.execute(
-        "UPDATE conversations SET hidden=0 WHERE id=?",
-        (cid,)
-    )
-    db.commit()
-    db.close()
-
-    return redirect("/admin?show_hidden=1")
-
-
-@app.post("/admin/add_product")
-async def add_product(
-    request: Request,
-    name: str = Form(...),
-    price: float = Form(...),
-    description: str = Form(""),
-    requires_chat: int = Form(0),
-    requires_content: int = Form(0),
-    image: UploadFile = File(None)
-):
-    if not is_admin(request):
-        return redirect("/store")
-
-    if price < 0:
-        return redirect("/admin")
-
-    image_url = None
-
-    if image and image.filename:
-        data = await image.read()
-
-        if data:
-            image_url = (
-                f"data:{image.content_type or 'image/png'};base64,"
-                + base64.b64encode(data).decode()
-            )
-
-    db = get_db()
-
-    db.execute("""
-        INSERT INTO products(
-            name, price, image_url, description,
-            requires_chat, requires_content
-        )
-        VALUES(?,?,?,?,?,?)
-    """, (
-        name.strip(),
-        price,
-        image_url,
-        description.strip(),
-        1 if requires_chat else 0,
-        1 if requires_content else 0
-    ))
-
-    db.commit()
-    db.close()
-
-    return redirect("/admin")
-
-
-@app.post("/admin/add_content")
-def add_content(
-    request: Request,
-    product_id: int = Form(...),
-    secret_code: str = Form(...)
-):
-    if not is_admin(request):
-        return redirect("/store")
-
-    db = get_db()
-
-    product = db.execute(
-        "SELECT * FROM products WHERE id=?",
-        (product_id,)
-    ).fetchone()
-
-    if product and secret_code.strip():
-        db.execute("""
-            INSERT INTO items(
-                name, secret_code, price,
-                image_url, product_id, is_sold
-            )
-            VALUES(?,?,?,?,?,0)
-        """, (
-            product["name"],
-            secret_code.strip(),
-            product["price"],
-            product["image_url"],
-            product_id
-        ))
-
-        db.commit()
-
-    db.close()
-
-    return redirect(f"/admin?selected_product={product_id}")
-
-
-@app.post("/admin/add_balance")
-def add_balance(
-    request: Request,
-    user_id: int = Form(...),
-    amount: float = Form(...)
-):
-    if not is_admin(request):
-        return redirect("/store")
-
-    if amount > 0:
-        db = get_db()
-
-        db.execute("""
-            UPDATE users
-            SET balance=balance+?
-            WHERE id=? AND is_admin=0
-        """, (amount, user_id))
-
-        db.commit()
-        db.close()
-
-    return redirect("/admin")
-
-
-@app.post("/admin/delete_product")
-def delete_product(
-    request: Request,
-    product_id: int = Form(...)
-):
-    if not is_admin(request):
-        return redirect("/store")
-
-    db = get_db()
-
-    db.execute(
-        "DELETE FROM items WHERE product_id=? AND is_sold=0",
-        (product_id,)
-    )
-
-    # لا نحذف سجل المشتريات أو المحادثات القديمة
-    db.execute(
-        "DELETE FROM products WHERE id=?",
-        (product_id,)
-    )
-
-    db.commit()
-    db.close()
-
-    return redirect("/admin")
-
-
-@app.post("/admin/delete_user")
-def delete_user(
-    request: Request,
-    user_id: int = Form(...)
-):
-    user = get_user(request)
-
-    if not user or not user.get("is_admin"):
-        return redirect("/login")
-
-    if user_id == user["id"]:
-        return redirect("/admin")
-
-    db = get_db()
-
-    # الاحتفاظ بالمحادثات والمشتريات القديمة
-    # لذلك لا نحذف المستخدم إذا كانت له سجلات مرتبطة
-    db.close()
-
-    return redirect("/admin")
-
-
-@app.get("/logout")
-def logout(request: Request):
-    request.session.clear()
-    return redirect("/login")
+        context=
