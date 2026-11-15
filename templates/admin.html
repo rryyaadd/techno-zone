@@ -13,6 +13,7 @@ body{background:#f4f8fd}
 .field{width:100%;padding:12px;border:1px solid #dbe5f0;border-radius:12px;background:#f8fbff}
 .btn{padding:11px 16px;border-radius:12px;color:white;font-weight:800;background:#087ee8}
 .bubble{white-space:pre-wrap;overflow-wrap:anywhere}
+button:disabled{opacity:.6;cursor:wait}
 </style>
 </head>
 <body class="text-slate-800">
@@ -79,7 +80,7 @@ body{background:#f4f8fd}
 
 <textarea class="field" name="secret_code" rows="2" placeholder="الكود أو المحتوى" required></textarea>
 
-<button class="btn sm:col-span-2">إضافة المحتوى</button>
+<button class="btn sm:col-span-2" type="submit">إضافة المحتوى</button>
 </form>
 <p class="mt-2 text-xs text-slate-500">تظهر هنا السلع التي تم تحديد أنها تحتاج إلى أكواد أو محتوى فقط.</p>
 </section>
@@ -100,7 +101,7 @@ body{background:#f4f8fd}
 
 <form action="/admin/delete_product" method="post" onsubmit="return confirm('حذف السلعة؟')">
 <input type="hidden" name="product_id" value="{{p.id}}">
-<button class="rounded-lg bg-red-100 px-3 py-2 text-red-700">حذف السلعة</button>
+<button type="submit" class="rounded-lg bg-red-100 px-3 py-2 text-red-700">حذف السلعة</button>
 </form>
 </div>
 
@@ -159,18 +160,18 @@ body{background:#f4f8fd}
 <div class="my-3 flex flex-wrap gap-2">
 
 <form action="/admin/chat/{{active_chat.id}}/status" method="post" class="flex flex-wrap gap-1">
-<button class="rounded-lg bg-green-600 px-3 py-2 text-xs text-white" name="status" value="open">فتح</button>
-<button class="rounded-lg bg-amber-500 px-3 py-2 text-xs text-white" name="status" value="paused">إيقاف مؤقت</button>
-<button class="rounded-lg bg-slate-700 px-3 py-2 text-xs text-white" name="status" value="closed">إغلاق</button>
+<button type="submit" class="rounded-lg bg-green-600 px-3 py-2 text-xs text-white" name="status" value="open">فتح</button>
+<button type="submit" class="rounded-lg bg-amber-500 px-3 py-2 text-xs text-white" name="status" value="paused">إيقاف مؤقت</button>
+<button type="submit" class="rounded-lg bg-slate-700 px-3 py-2 text-xs text-white" name="status" value="closed">إغلاق</button>
 </form>
 
 <form action="/admin/chat/{{active_chat.id}}/hide" method="post">
-<button class="rounded-lg bg-red-100 px-3 py-2 text-xs text-red-700">إخفاء</button>
+<button type="submit" class="rounded-lg bg-red-100 px-3 py-2 text-xs text-red-700">إخفاء</button>
 </form>
 
 {% if active_chat.hidden %}
 <form action="/admin/chat/{{active_chat.id}}/unhide" method="post">
-<button class="rounded-lg bg-blue-100 px-3 py-2 text-xs text-blue-700">إظهار</button>
+<button type="submit" class="rounded-lg bg-blue-100 px-3 py-2 text-xs text-blue-700">إظهار</button>
 </form>
 {% endif %}
 
@@ -200,7 +201,7 @@ body{background:#f4f8fd}
 {% if active_chat.status!='closed' %}
 <form action="/admin/chat/{{active_chat.id}}/send" method="post">
 <textarea class="field mb-2" rows="3" name="message" required placeholder="اكتب الرد أو رابط العميل"></textarea>
-<button class="btn w-full">إرسال الرسالة</button>
+<button type="submit" class="btn w-full">إرسال الرسالة</button>
 </form>
 {% else %}
 <p class="text-xs text-slate-500">المحادثة مغلقة؛ أعد فتحها للرد.</p>
@@ -230,7 +231,7 @@ body{background:#f4f8fd}
 <form action="/admin/add_balance" method="post" class="flex gap-2">
 <input type="hidden" name="user_id" value="{{u.id}}">
 <input class="field w-28" type="number" min="0.01" step="0.01" name="amount" placeholder="المبلغ" required>
-<button class="btn">شحن</button>
+<button type="submit" class="btn">شحن</button>
 </form>
 
 </div>
@@ -246,5 +247,117 @@ body{background:#f4f8fd}
 </footer>
 
 </main>
+
+<div id="admin-toast" role="status" aria-live="polite"
+style="position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:99999;display:none;min-width:240px;max-width:92%;padding:13px 18px;border-radius:14px;color:#fff;font-weight:800;text-align:center;box-shadow:0 8px 30px #0002">
+</div>
+
+<script>
+(function () {
+  const toast = document.getElementById("admin-toast");
+  let toastTimer;
+
+  function showToast(message, ok) {
+    toast.textContent = message || (ok ? "تم تنفيذ العملية بنجاح" : "تعذر تنفيذ العملية");
+    toast.style.background = ok ? "#15803d" : "#b91c1c";
+    toast.style.display = "block";
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toast.style.display = "none";
+    }, 4500);
+  }
+
+  async function updateAdminContent(url) {
+    const response = await fetch(url || "/admin", {
+      method: "GET",
+      headers: {"X-Requested-With": "XMLHttpRequest"},
+      credentials: "same-origin",
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      throw new Error("تعذر تحديث بيانات لوحة الإدارة");
+    }
+
+    const html = await response.text();
+    const parsed = new DOMParser().parseFromString(html, "text/html");
+    const newMain = parsed.querySelector("main");
+    const currentMain = document.querySelector("main");
+
+    if (!newMain || !currentMain) {
+      throw new Error("تعذر قراءة محتوى لوحة الإدارة");
+    }
+
+    currentMain.innerHTML = newMain.innerHTML;
+
+    if (url) {
+      history.replaceState({}, "", url);
+    }
+  }
+
+  document.addEventListener("submit", async function (event) {
+    const form = event.target;
+
+    if (!(form instanceof HTMLFormElement)) return;
+    if (!form.action || !form.action.startsWith(window.location.origin)) return;
+
+    event.preventDefault();
+
+    const submitButton = event.submitter ||
+      form.querySelector('button[type="submit"],button:not([type])');
+
+    const oldButtonText = submitButton ? submitButton.textContent : "";
+
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = "جارٍ التنفيذ...";
+    }
+
+    try {
+      const formData = new FormData(form);
+
+      if (event.submitter && event.submitter.name) {
+        formData.append(event.submitter.name, event.submitter.value);
+      }
+
+      const response = await fetch(form.action, {
+        method: (form.method || "POST").toUpperCase(),
+        body: formData,
+        headers: {
+          "Accept": "application/json",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        credentials: "same-origin"
+      });
+
+      const contentType = response.headers.get("content-type") || "";
+
+      if (!contentType.includes("application/json")) {
+        throw new Error("استجابة الخادم غير صحيحة. تحقق من main.py.");
+      }
+
+      const result = await response.json();
+
+      if (!response.ok || !result.ok) {
+        showToast(result.message || "فشلت العملية", false);
+        return;
+      }
+
+      await updateAdminContent(result.redirect || "/admin");
+      showToast(result.message || "تم تنفيذ العملية بنجاح", true);
+
+    } catch (error) {
+      showToast(error.message || "حدث خطأ في الاتصال", false);
+
+    } finally {
+      if (submitButton && submitButton.isConnected) {
+        submitButton.disabled = false;
+        submitButton.textContent = oldButtonText;
+      }
+    }
+  });
+})();
+</script>
+
 </body>
 </html>
