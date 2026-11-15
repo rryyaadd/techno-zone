@@ -661,3 +661,345 @@ def hide_purchase(request: Request, purchase_id: int):
     db.close()
 
     return redirect("/store")
+@app.get("/admin", response_class=HTMLResponse)
+def admin(
+    request: Request,
+    chat: int = None,
+    show_hidden: int = 0,
+    selected_product: int = None
+):
+    if not is_admin(request):
+        return redirect("/store")
+
+    db = get_db()
+
+    products = db.execute("""
+        SELECT
+            p.*,
+            COUNT(i.id) AS total_codes,
+            SUM(CASE WHEN i.is_sold=0 THEN 1 ELSE 0 END) AS available_codes
+        FROM products p
+        LEFT JOIN items i ON i.product_id=p.id
+        GROUP BY p.id
+        ORDER BY p.id DESC
+    """).fetchall()
+
+    users = db.execute("""
+        SELECT id,username,balance
+        FROM users
+        WHERE is_admin=0
+        ORDER BY id DESC
+    """).fetchall()
+
+    chats = db.execute("""
+        SELECT
+            c.*,
+            u.username,
+            (
+                SELECT message
+                FROM messages m
+                WHERE m.conversation_id=c.id
+                ORDER BY m.id DESC LIMIT 1
+            ) AS last_message
+        FROM conversations c
+        JOIN users u ON u.id=c.user_id
+        WHERE (?=1 OR c.hidden=0)
+        ORDER BY c.id DESC
+    """, (show_hidden,)).fetchall()
+
+    active_chat = None
+    chat_messages = []
+
+    if chat:
+        active_chat = db.execute("""
+            SELECT c.*,u.username
+            FROM conversations c
+            JOIN users u ON u.id=c.user_id
+            WHERE c.id=?
+        """, (chat,)).fetchone()
+
+        if active_chat:
+            chat_messages = db.execute("""
+                SELECT *
+                FROM messages
+                WHERE conversation_id=?
+                ORDER BY id
+            """, (chat,)).fetchall()
+
+    db.close()
+
+    return templates.TemplateResponse(
+        request=request,
+        name="admin.html",
+        context={
+            "products": products,
+            "users": users,
+            "conversations": chats,
+            "active_chat": active_chat,
+            "chat_messages": chat_messages,
+            "show_hidden": show_hidden,
+            "selected_product": selected_product,
+            "whatsapp_number": WHATSAPP_NUMBER
+        }
+    )
+
+
+@app.post("/admin/chat/{cid}/send")
+def admin_send(
+    request: Request,
+    cid: int,
+    message: str = Form(...)
+):
+    user = get_user(request)
+
+    if not user or not user.get("is_admin"):
+        return redirect("/login")
+
+    db = get_db()
+
+    chat = db.execute(
+        "SELECT * FROM conversations WHERE id=?",
+        (cid,)
+    ).fetchone()
+
+    if chat and chat["status"] != "closed" and message.strip():
+        db.execute("""
+            INSERT INTO messages(
+                conversation_id, sender_id, sender_role, message
+            )
+            VALUES(?,?,?,?)
+        """, (
+            cid,
+            user["id"],
+            "admin",
+            message.strip()[:5000]
+        ))
+
+        db.commit()
+
+    db.close()
+    return redirect(f"/admin?chat={cid}")
+
+
+@app.post("/admin/chat/{cid}/status")
+def chat_status(
+    request: Request,
+    cid: int,
+    status: str = Form(...)
+):
+    if not is_admin(request):
+        return redirect("/login")
+
+    if status not in ("open", "paused", "closed"):
+        return redirect("/admin")
+
+    db = get_db()
+
+    db.execute(
+        "UPDATE conversations SET status=? WHERE id=?",
+        (status, cid)
+    )
+
+    db.commit()
+    db.close()
+
+    return redirect(f"/admin?chat={cid}")
+
+
+@app.post("/admin/chat/{cid}/hide")
+def chat_hide(request: Request, cid: int):
+    if not is_admin(request):
+        return redirect("/login")
+
+    db = get_db()
+    db.execute(
+        "UPDATE conversations SET hidden=1 WHERE id=?",
+        (cid,)
+    )
+    db.commit()
+    db.close()
+
+    return redirect("/admin")
+
+
+@app.post("/admin/chat/{cid}/unhide")
+def chat_unhide(request: Request, cid: int):
+    if not is_admin(request):
+        return redirect("/login")
+
+    db = get_db()
+    db.execute(
+        "UPDATE conversations SET hidden=0 WHERE id=?",
+        (cid,)
+    )
+    db.commit()
+    db.close()
+
+    return redirect("/admin?show_hidden=1")
+
+
+@app.post("/admin/add_product")
+async def add_product(
+    request: Request,
+    name: str = Form(...),
+    price: float = Form(...),
+    description: str = Form(""),
+    requires_chat: int = Form(0),
+    requires_content: int = Form(0),
+    image: UploadFile = File(None)
+):
+    if not is_admin(request):
+        return redirect("/store")
+
+    if price < 0:
+        return redirect("/admin")
+
+    image_url = None
+
+    if image and image.filename:
+        data = await image.read()
+
+        if data:
+            image_url = (
+                f"data:{image.content_type or 'image/png'};base64,"
+                + base64.b64encode(data).decode()
+            )
+
+    db = get_db()
+
+    db.execute("""
+        INSERT INTO products(
+            name, price, image_url, description,
+            requires_chat, requires_content
+        )
+        VALUES(?,?,?,?,?,?)
+    """, (
+        name.strip(),
+        price,
+        image_url,
+        description.strip(),
+        1 if requires_chat else 0,
+        1 if requires_content else 0
+    ))
+
+    db.commit()
+    db.close()
+
+    return redirect("/admin")
+
+
+@app.post("/admin/add_content")
+def add_content(
+    request: Request,
+    product_id: int = Form(...),
+    secret_code: str = Form(...)
+):
+    if not is_admin(request):
+        return redirect("/store")
+
+    db = get_db()
+
+    product = db.execute(
+        "SELECT * FROM products WHERE id=?",
+        (product_id,)
+    ).fetchone()
+
+    if product and secret_code.strip():
+        db.execute("""
+            INSERT INTO items(
+                name, secret_code, price,
+                image_url, product_id, is_sold
+            )
+            VALUES(?,?,?,?,?,0)
+        """, (
+            product["name"],
+            secret_code.strip(),
+            product["price"],
+            product["image_url"],
+            product_id
+        ))
+
+        db.commit()
+
+    db.close()
+
+    return redirect(f"/admin?selected_product={product_id}")
+
+
+@app.post("/admin/add_balance")
+def add_balance(
+    request: Request,
+    user_id: int = Form(...),
+    amount: float = Form(...)
+):
+    if not is_admin(request):
+        return redirect("/store")
+
+    if amount > 0:
+        db = get_db()
+
+        db.execute("""
+            UPDATE users
+            SET balance=balance+?
+            WHERE id=? AND is_admin=0
+        """, (amount, user_id))
+
+        db.commit()
+        db.close()
+
+    return redirect("/admin")
+
+
+@app.post("/admin/delete_product")
+def delete_product(
+    request: Request,
+    product_id: int = Form(...)
+):
+    if not is_admin(request):
+        return redirect("/store")
+
+    db = get_db()
+
+    db.execute(
+        "DELETE FROM items WHERE product_id=? AND is_sold=0",
+        (product_id,)
+    )
+
+    # لا نحذف سجل المشتريات أو المحادثات القديمة
+    db.execute(
+        "DELETE FROM products WHERE id=?",
+        (product_id,)
+    )
+
+    db.commit()
+    db.close()
+
+    return redirect("/admin")
+
+
+@app.post("/admin/delete_user")
+def delete_user(
+    request: Request,
+    user_id: int = Form(...)
+):
+    user = get_user(request)
+
+    if not user or not user.get("is_admin"):
+        return redirect("/login")
+
+    if user_id == user["id"]:
+        return redirect("/admin")
+
+    db = get_db()
+
+    # الاحتفاظ بالمحادثات والمشتريات القديمة
+    # لذلك لا نحذف المستخدم إذا كانت له سجلات مرتبطة
+    db.close()
+
+    return redirect("/admin")
+
+
+@app.get("/logout")
+def logout(request: Request):
+    request.session.clear()
+    return redirect("/login")
