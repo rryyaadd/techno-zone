@@ -1432,19 +1432,121 @@ return action_response(
 
 ==========================================
 
+
 @app.post("/admin/add_content")
 def add_content(
-request: Request,
-product_id: int = Form(...),
-secret_code: str = Form(...)
+    request: Request,
+    product_id: int = Form(...),
+    secret_code: str = Form(...)
 ):
-if not is_admin(request):
-return action_response(
-request, "غير مصرح", "/login", False
-)
+    if not is_admin(request):
+        return action_response(
+            request, "غير مصرح", "/login", False
+        )
 
-lines = [  
-    line.strip()  
+    lines = [
+        line.strip()
+        for line in secret_code.splitlines()
+        if line.strip()
+    ]
+
+    accounts = []
+
+    if len(lines) % 2 != 0:
+        return action_response(
+            request,
+            "تأكد من إدخال الحساب وكلمة السر لكل حساب",
+            f"/admin?selected_product={product_id}",
+            False
+        )
+
+    for i in range(0, len(lines), 2):
+        account_line = lines[i]
+        password_line = lines[i + 1]
+
+        if ":" not in account_line or ":" not in password_line:
+            return action_response(
+                request,
+                "صيغة الحسابات غير صحيحة",
+                f"/admin?selected_product={product_id}",
+                False
+            )
+
+        account_label, account = account_line.split(":", 1)
+        password_label, password = password_line.split(":", 1)
+
+        if not account.strip() or not password.strip():
+            return action_response(
+                request,
+                "الحساب أو كلمة السر فارغة",
+                f"/admin?selected_product={product_id}",
+                False
+            )
+
+        accounts.append(
+            f"الحساب : {account.strip()}\n"
+            f"كلمة السر : {password.strip()}"
+        )
+
+    db = get_db()
+
+    try:
+        product = db.execute(
+            "SELECT * FROM products WHERE id=?",
+            (product_id,)
+        ).fetchone()
+
+        if not product:
+            db.close()
+            return action_response(
+                request,
+                "المنتج غير موجود",
+                "/admin",
+                False
+            )
+
+        for account in accounts:
+            db.execute("""
+                INSERT INTO items(
+                    name,
+                    secret_code,
+                    price,
+                    is_sold,
+                    product_id
+                )
+                VALUES(?,?,?,?,?)
+            """, (
+                product["name"],
+                account,
+                product["price"],
+                0,
+                product_id
+            ))
+
+        db.commit()
+        db.close()
+
+        return action_response(
+            request,
+            f"تمت إضافة {len(accounts)} حساب بنجاح",
+            f"/admin?selected_product={product_id}"
+        )
+
+    except Exception as error:
+        print("Add content error:", error)
+
+        try:
+            db.close()
+        except Exception:
+            pass
+
+        return action_response(
+            request,
+            "حدث خطأ أثناء إضافة الحسابات",
+            "/admin",
+            False
+        )
+
 ==========================================
 إضافة منتج مع رفع الصورة إلى Cloudinary
 ==========================================
