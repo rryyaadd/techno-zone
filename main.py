@@ -10,7 +10,9 @@ import asyncio
 import requests
 import uuid
 from pathlib import Path
-
+import cloudinary
+import cloudinary.uploader
+from io import BytesIO
 
 # ==========================================
 # إعداد التطبيق
