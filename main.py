@@ -1534,11 +1534,160 @@ def add_content(
 
         return action_response(
             request,
-            "حدث خطأ أثناء إضافة الحسابات",
+# ==========================================
+# إضافة منتج مع رفع الصورة إلى Cloudinary
+# ==========================================
+
+@app.post("/admin/add_product")
+async def add_product(
+    request: Request,
+    name: str = Form(...),
+    price: float = Form(...),
+    image_url: str = Form(""),
+    description: str = Form(""),
+    requires_chat: int = Form(0),
+    requires_content: int = Form(0),
+    image: UploadFile = File(None)
+):
+    if not is_admin(request):
+        return action_response(
+            request, "غير مصرح", "/login", False
+        )
+
+    name = name.strip()
+
+    if not name or price < 0:
+        return action_response(
+            request,
+            "اسم المنتج أو السعر غير صالح",
             "/admin",
             False
-)
+        )
 
+    image_path = image_url.strip()
+
+    if image and image.filename:
+        allowed_extensions = {
+            ".jpg", ".jpeg", ".png", ".webp"
+        }
+
+        extension = Path(image.filename).suffix.lower()
+
+        if extension not in allowed_extensions:
+            return action_response(
+                request,
+                "صيغة الصورة غير مدعومة",
+                "/admin",
+                False
+            )
+
+        content = await image.read()
+
+        if not content:
+            return action_response(
+                request,
+                "ملف الصورة فارغ",
+                "/admin",
+                False
+            )
+
+        if len(content) > 5 * 1024 * 1024:
+            return action_response(
+                request,
+                "حجم الصورة يجب ألا يتجاوز 5 ميجابايت",
+                "/admin",
+                False
+            )
+
+        cloudinary_url = os.environ.get("CLOUDINARY_URL")
+
+        if not cloudinary_url:
+            return action_response(
+                request,
+                "إعداد Cloudinary غير موجود في Render",
+                "/admin",
+                False
+            )
+
+        try:
+            cloudinary.config(
+                cloudinary_url=cloudinary_url
+            )
+
+            result = cloudinary.uploader.upload(
+                BytesIO(content),
+                resource_type="image",
+                folder="techno_zone/products"
+            )
+
+            image_path = result.get("secure_url", "")
+
+            if not image_path:
+                return action_response(
+                    request,
+                    "لم يتم الحصول على رابط الصورة",
+                    "/admin",
+                    False
+                )
+
+        except Exception as error:
+            print("Cloudinary upload error:", error)
+
+            return action_response(
+                request,
+                "فشل رفع الصورة إلى Cloudinary، حاول مرة أخرى",
+                "/admin",
+                False
+            )
+
+    requires_chat = 1 if requires_chat else 0
+    requires_content = 1 if requires_content else 0
+
+    db = get_db()
+
+    try:
+        db.execute("""
+            INSERT INTO products(
+                name,
+                price,
+                image_url,
+                description,
+                requires_chat,
+                requires_content
+            )
+            VALUES(?,?,?,?,?,?)
+        """, (
+            name,
+            price,
+            image_path,
+            description.strip(),
+            requires_chat,
+            requires_content
+        ))
+
+        db.commit()
+        db.close()
+
+        return action_response(
+            request,
+            "تمت إضافة المنتج والصورة بنجاح",
+            "/admin"
+        )
+
+    except Exception as error:
+        print("Add product error:", error)
+
+        try:
+            db.close()
+        except Exception:
+            pass
+
+        return action_response(
+            request,
+            "حدث خطأ أثناء حفظ المنتج",
+            "/admin",
+            False
+        )
 
 # ==========================================
 # شحن رصيد مستخدم
