@@ -1445,115 +1445,160 @@ request, "غير مصرح", "/login", False
 
 lines = [  
     line.strip()  
-    for line in secret_code.splitlines()  
-    if line.strip()  
-]  
+==========================================
+إضافة منتج مع رفع الصورة إلى Cloudinary
+==========================================
 
-if not lines or len(lines) % 2 != 0:  
-    return action_response(  
-        request,  
-        "تأكد من إدخال الحساب وكلمة السر لكل حساب",  
-        "/admin",  
-        False  
-    )  
+@app.post("/admin/add_product")
+async def add_product(
+    request: Request,
+    name: str = Form(...),
+    price: float = Form(...),
+    image_url: str = Form(""),
+    description: str = Form(""),
+    requires_chat: int = Form(0),
+    requires_content: int = Form(0),
+    image: UploadFile = File(None)
+):
+    if not is_admin(request):
+        return action_response(
+            request, "غير مصرح", "/login", False
+        )
 
-accounts = []  
+    name = name.strip()
 
-for i in range(0, len(lines), 2):  
-    email_line = lines[i]  
-    password_line = lines[i + 1]  
+    if not name or price < 0:
+        return action_response(
+            request,
+            "اسم المنتج أو السعر غير صالح",
+            "/admin",
+            False
+        )
 
-    if not email_line.startswith("الحساب"):  
-        return action_response(  
-            request,  
-            "السطر الأول يجب أن يبدأ بكلمة الحساب",  
-            "/admin",  
-            False  
-        )  
+    image_path = image_url.strip()
 
-    if not password_line.startswith("كلمة السر"):  
-        return action_response(  
-            request,  
-            "السطر الثاني يجب أن يبدأ بكلمة السر",  
-            "/admin",  
-            False  
-        )  
+    if image and image.filename:
+        allowed_extensions = {
+            ".jpg", ".jpeg", ".png", ".webp"
+        }
 
-    email = email_line.split(":", 1)[-1].strip()  
-    password = password_line.split(":", 1)[-1].strip()  
+        extension = Path(image.filename).suffix.lower()
 
-    if not email or not password:  
-        return action_response(  
-            request,  
-            "الحساب أو كلمة السر فارغة",  
-            "/admin",  
-            False  
-        )  
+        if extension not in allowed_extensions:
+            return action_response(
+                request,
+                "صيغة الصورة غير مدعومة",
+                "/admin",
+                False
+            )
 
-    accounts.append(  
-        f"الحساب : {email}\nكلمة السر : {password}"  
-    )  
+        content = await image.read()
 
-db = get_db()  
+        if not content:
+            return action_response(
+                request,
+                "ملف الصورة فارغ",
+                "/admin",
+                False
+            )
 
-try:  
-    product = db.execute("""  
-        SELECT *  
-        FROM products  
-        WHERE id=?  
-    """, (product_id,)).fetchone()  
+        if len(content) > 5 * 1024 * 1024:
+            return action_response(
+                request,
+                "حجم الصورة يجب ألا يتجاوز 5 ميجابايت",
+                "/admin",
+                False
+            )
 
-    if not product or not product["requires_content"]:  
-        db.close()  
-        return action_response(  
-            request,  
-            "المنتج غير موجود أو لا يقبل المحتوى",  
-            "/admin",  
-            False  
-        )  
+        cloudinary_url = os.environ.get("CLOUDINARY_URL")
 
-    for account in accounts:  
-        db.execute("""  
-            INSERT INTO items(  
-                name,  
-                secret_code,  
-                price,  
-                is_sold,  
-                product_id  
-            )  
-            VALUES(?,?,?,0,?)  
-        """, (  
-            product["name"],  
-            account,  
-            product["price"],  
-            product_id  
-        ))  
+        if not cloudinary_url:
+            return action_response(
+                request,
+                "إعداد Cloudinary غير موجود في Render",
+                "/admin",
+                False
+            )
 
-    db.commit()  
-    db.close()  
+        try:
+            cloudinary.config(
+                cloudinary_url=cloudinary_url
+            )
 
-    return action_response(  
-        request,  
-        f"تمت إضافة {len(accounts)} حساب بنجاح",  
-        "/admin"  
-    )  
+            result = cloudinary.uploader.upload(
+                BytesIO(content),
+                resource_type="image",
+                folder="techno_zone/products"
+            )
 
-except Exception as error:  
-    print("Add content error:", error)  
+            image_path = result.get("secure_url", "")
 
-    try:  
-        db.close()  
-    except Exception:  
-        pass  
+            if not image_path:
+                return action_response(
+                    request,
+                    "لم يتم الحصول على رابط الصورة",
+                    "/admin",
+                    False
+                )
 
-    return action_response(  
-        request,  
-        "حدث خطأ أثناء إضافة الحسابات",  
-        "/admin",  
-        False
+        except Exception as error:
+            print("Cloudinary upload error:", error)
 
+            return action_response(
+                request,
+                "فشل رفع الصورة إلى Cloudinary، حاول مرة أخرى",
+                "/admin",
+                False
+            )
+
+    requires_chat = 1 if requires_chat else 0
+    requires_content = 1 if requires_content else 0
+
+    db = get_db()
+
+    try:
+        db.execute("""
+            INSERT INTO products(
+                name,
+                price,
+                image_url,
+                description,
+                requires_chat,
+                requires_content
+            )
+            VALUES(?,?,?,?,?,?)
+        """, (
+            name,
+            price,
+            image_path,
+            description.strip(),
+            requires_chat,
+            requires_content
+        ))
+
+        db.commit()
+        db.close()
+
+        return action_response(
+            request,
+            "تمت إضافة المنتج والصورة بنجاح",
+            "/admin"
+        )
+
+    except Exception as error:
+        print("Add product error:", error)
+
+        try:
+            db.close()
+        except Exception:
+            pass
+
+        return action_response(
+            request,
+            "حدث خطأ أثناء حفظ المنتج",
+            "/admin",
+            False
 )
-
 ==========================================
 
 شحن رصيد مستخدم
